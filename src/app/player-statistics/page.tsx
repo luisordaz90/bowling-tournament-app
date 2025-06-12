@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Trophy, BarChart3, Target, TrendingUp, Medal, Star, Award, User, Crown, ChevronUp, ChevronDown } from 'lucide-react';
 import ProtectedRoute from '../components/ProtectedRoute';
-import { tournamentApi, playerStatisticsApi, Tournament, PlayerStatistic } from '../../lib/api';
+import { tournamentApi, Tournament } from '../../lib/api';
 
 // interface PlayerStatistic {
 //   playerId: string;
@@ -26,7 +26,7 @@ type SortDirection = 'asc' | 'desc';
 export default function PlayerStatisticsPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [selectedTournament, setSelectedTournament] = useState<string>('');
-  const [playerStats, setPlayerStats] = useState<PlayerStatistic[]>([]);
+  const [playerStats, setPlayerStats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField>('currentAverage');
@@ -45,9 +45,9 @@ export default function PlayerStatisticsPage() {
   const fetchTournaments = async () => {
     try {
       const response = await tournamentApi.getAll();
-      setTournaments(response.data);
-      if (response.data.length > 0) {
-        setSelectedTournament(response.data[0].id);
+      setTournaments(response);
+      if (response.length > 0) {
+        setSelectedTournament(response[0].id);
       }
     } catch (err) {
       setError('Failed to fetch tournaments');
@@ -58,7 +58,7 @@ export default function PlayerStatisticsPage() {
   const fetchPlayerStatistics = async (tournamentId: string) => {
     try {
       setLoading(true);
-      const response = await playerStatisticsApi.getViaNextApi(tournamentId);
+      const response = await tournamentApi.getAllPlayerStatistics(tournamentId);//playerStatisticsApi.getViaNextApi(tournamentId);
       setPlayerStats(response);
       setError(null);
     } catch (err) {

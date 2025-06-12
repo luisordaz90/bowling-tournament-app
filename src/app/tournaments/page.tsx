@@ -22,7 +22,7 @@ export default function TournamentsPage() {
     try {
       setLoading(true);
       const response = await tournamentApi.getAll();
-      setTournaments(response.data);
+      setTournaments(response);
       setError(null);
     } catch (err) {
       setError('Failed to fetch tournaments');

@@ -22,9 +22,7 @@ import {
 import ProtectedRoute from '../components/ProtectedRoute';
 import { 
   tournamentApi, 
-  teamStatisticsApi, 
   Tournament, 
-  TeamStatistic 
 } from '../../lib/api';
 
 type SortField = 'teamName' | 'teamAverage' | 'matchesWon' | 'matchesLost' | 'totalMatchesPlayed' | 'totalTeamScore' | 'rankPosition';
@@ -33,7 +31,7 @@ type SortDirection = 'asc' | 'desc';
 export default function TeamStatisticsPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [selectedTournament, setSelectedTournament] = useState<string>('');
-  const [teamStats, setTeamStats] = useState<TeamStatistic[]>([]);
+  const [teamStats, setTeamStats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField>('rankPosition');
@@ -52,9 +50,9 @@ export default function TeamStatisticsPage() {
   const fetchTournaments = async () => {
     try {
       const response = await tournamentApi.getAll();
-      setTournaments(response.data);
-      if (response.data.length > 0) {
-        setSelectedTournament(response.data[0].id);
+      setTournaments(response);
+      if (response.length > 0) {
+        setSelectedTournament(response[0].id);
       }
     } catch (err) {
       setError('Failed to fetch tournaments');
@@ -65,7 +63,7 @@ export default function TeamStatisticsPage() {
   const fetchTeamStatistics = async (tournamentId: string) => {
     try {
       setLoading(true);
-      const response = await teamStatisticsApi.getViaNextApi(tournamentId);
+      const response = await tournamentApi.getAllTeamStatistics(tournamentId);
       setTeamStats(response);
       setError(null);
     } catch (err) {

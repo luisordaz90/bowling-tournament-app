@@ -26,7 +26,7 @@ export default function PlayersPage() {
     try {
       setLoading(true);
       const response = await playerApi.getAll();
-      setPlayers(response.data);
+      setPlayers(response);
       setError(null);
     } catch (err) {
       setError('Failed to fetch players');
@@ -43,7 +43,7 @@ export default function PlayersPage() {
         ...formData,
         handicap: formData.handicap ? parseInt(formData.handicap) : 0,
       });
-      setPlayers([...players, response.data]);
+      setPlayers([...players, response]);
       setFormData({ name: '', email: '', phone: '', handicap: '' });
       setShowCreateForm(false);
     } catch (err) {

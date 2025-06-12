@@ -6,15 +6,15 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Trophy, Users, Calendar, BarChart3, ArrowLeft, Plus } from 'lucide-react';
 import ProtectedRoute from '../../components/ProtectedRoute';
-import { tournamentApi, Tournament, Standing, Statistics } from '../../../lib/api';
+import { tournamentApi, Tournament } from '../../../lib/api';
 
 export default function TournamentDetailPage() {
   const params = useParams();
   const tournamentId = params.id as string;
   
   const [tournament, setTournament] = useState<Tournament | null>(null);
-  const [standings, setStandings] = useState<Standing[]>([]);
-  const [statistics, setStatistics] = useState<Statistics | null>(null);
+  const [standings, setStandings] = useState<any[]>([]);
+  const [statistics, setStatistics] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'standings' | 'statistics'>('overview');
@@ -32,9 +32,9 @@ export default function TournamentDetailPage() {
         tournamentApi.getStatistics(tournamentId),
       ]);
       
-      setTournament(tournamentResponse.data);
-      setStandings(standingsResponse.data);
-      setStatistics(statisticsResponse.data);
+      setTournament(tournamentResponse);
+      setStandings(standingsResponse);
+      setStatistics(statisticsResponse);
       setError(null);
     } catch (err) {
       setError('Failed to fetch tournament data');

@@ -32,7 +32,7 @@ export default function NewTournamentPage() {
         totalSessions: parseInt(formData.totalSessions),
       });
       
-      router.push(`/tournaments/${response.data.id}`);
+      router.push(`/tournaments/${response.id}`);
     } catch (error) {
       console.error('Error creating tournament:', error);
       alert('Failed to create tournament. Please try again.');

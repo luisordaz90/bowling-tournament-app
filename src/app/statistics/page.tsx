@@ -4,12 +4,12 @@
 import { useState, useEffect } from 'react';
 import { BarChart3, Trophy, Users, Target, TrendingUp, Medal, Star, Award } from 'lucide-react';
 import ProtectedRoute from '../components/ProtectedRoute';
-import { tournamentApi, Tournament, Statistics } from '../../lib/api';
+import { tournamentApi, Tournament } from '../../lib/api';
 
 export default function StatisticsPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [selectedTournament, setSelectedTournament] = useState<string>('');
-  const [statistics, setStatistics] = useState<Statistics | null>(null);
+  const [statistics, setStatistics] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,9 +26,9 @@ export default function StatisticsPage() {
   const fetchTournaments = async () => {
     try {
       const response = await tournamentApi.getAll();
-      setTournaments(response.data);
-      if (response.data.length > 0) {
-        setSelectedTournament(response.data[0].id);
+      setTournaments(response);
+      if (response.length > 0) {
+        setSelectedTournament(response[0].id);
       }
     } catch (err) {
       setError('Failed to fetch tournaments');
@@ -40,7 +40,7 @@ export default function StatisticsPage() {
     try {
       setLoading(true);
       const response = await tournamentApi.getStatistics(tournamentId);
-      setStatistics(response.data);
+      setStatistics(response);
       setError(null);
     } catch (err) {
       setError('Failed to fetch statistics');

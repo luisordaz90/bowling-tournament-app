@@ -27,7 +27,7 @@ export default function TeamsPage() {
     try {
       setLoading(true);
       const response = await teamApi.getAll();
-      setTeams(response.data);
+      setTeams(response);
       setError(null);
     } catch (err) {
       setError('Failed to fetch teams');
@@ -41,7 +41,7 @@ export default function TeamsPage() {
     e.preventDefault();
     try {
       const response = await teamApi.create(formData);
-      setTeams([...teams, response.data]);
+      setTeams([...teams, response]);
       setFormData({ name: '', captainName: '', captainEmail: '', captainPhone: '' });
       setShowCreateForm(false);
     } catch (err) {

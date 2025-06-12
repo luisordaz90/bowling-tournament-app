@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { tournamentApi, Tournament, teamApi, Team, TournamentTeam } from '@/lib/api';
+import { tournamentApi, Tournament, teamApi, Team } from '@/lib/api';
 import Link from 'next/link';
 
 interface FormData {
@@ -52,7 +52,7 @@ export default function EditTournamentPage() {
 
   // Team management state
   const [allTeams, setAllTeams] = useState<Team[]>([]);
-  const [registeredTeams, setRegisteredTeams] = useState<TournamentTeam[]>([]);
+  const [registeredTeams, setRegisteredTeams] = useState<any[]>([]);
   const [selectedTeamId, setSelectedTeamId] = useState<string>('');
   const [seedNumber, setSeedNumber] = useState<string>('');
   const [isAddingTeam, setIsAddingTeam] = useState(false);
@@ -67,7 +67,7 @@ export default function EditTournamentPage() {
         
         // Load tournament data
         const tournamentResponse = await tournamentApi.getById(tournamentId);
-        const tournament = tournamentResponse.data;
+        const tournament = tournamentResponse;
 
         // Format dates for input fields
         const formatDateForInput = (dateString: string) => {
@@ -89,11 +89,11 @@ export default function EditTournamentPage() {
 
         // Load all teams
         const teamsResponse = await teamApi.getAll();
-        setAllTeams(teamsResponse.data);
+        setAllTeams(teamsResponse);
 
         // Load registered teams for this tournament
-        const registeredTeamsResponse = await tournamentApi.getTeams(tournamentId);
-        setRegisteredTeams(registeredTeamsResponse.data);
+        const registeredTeamsResponse = await tournamentApi.getRegisteredTeams(tournamentId);
+        setRegisteredTeams(registeredTeamsResponse);
 
       } catch (error) {
         console.error('Failed to load data:', error);
@@ -229,7 +229,7 @@ export default function EditTournamentPage() {
       console.error('Failed to update tournament:', error);
       setSubmitMessage({
         type: 'error',
-        text: error.response?.data?.error || 'Failed to update tournament. Please try again.'
+        text: error.response?.error || 'Failed to update tournament. Please try again.'
       });
     } finally {
       setIsSubmitting(false);
@@ -270,8 +270,8 @@ export default function EditTournamentPage() {
       await tournamentApi.registerTeam(tournamentId, registrationData);
       
       // Reload registered teams
-      const registeredTeamsResponse = await tournamentApi.getTeams(tournamentId);
-      setRegisteredTeams(registeredTeamsResponse.data);
+      const registeredTeamsResponse = await tournamentApi.getRegisteredTeams(tournamentId);
+      setRegisteredTeams(registeredTeamsResponse);
       
       // Clear form
       setSelectedTeamId('');
@@ -281,12 +281,11 @@ export default function EditTournamentPage() {
         type: 'success',
         text: 'Team successfully added to tournament!'
       });
-      console.log("HERE");
     } catch (error: any) {
       console.error('Failed to add team:', error);
       setTeamMessage({
         type: 'error',
-        text: error.response?.data?.error || 'Failed to add team. Please try again.'
+        text: error.response?.error || 'Failed to add team. Please try again.'
       });
     } finally {
       setIsAddingTeam(false);

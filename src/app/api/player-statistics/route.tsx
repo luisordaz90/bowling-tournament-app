@@ -1,6 +1,6 @@
 // src/app/api/player-statistics/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { playerStatisticsApi } from '../../../lib/api';
+import { playerStatisticsApi, tournamentApi } from '../../../lib/api';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -10,12 +10,12 @@ export async function GET(request: NextRequest) {
   try {
     if (tournamentId && playerId) {
       // Get specific player statistics for a tournament
-      const response = await playerStatisticsApi.getPlayerInTournament(tournamentId, playerId);
-      return NextResponse.json(response.data);
+      const response = await tournamentApi.getPlayerStatistics(tournamentId, playerId);
+      return NextResponse.json(response);
     } else if (tournamentId) {
       // Get all player statistics for a tournament
-      const response = await playerStatisticsApi.getByTournament(tournamentId);
-      return NextResponse.json(response.data);
+      const response = await tournamentApi.getAllPlayerStatistics(tournamentId);
+      return NextResponse.json(response);
     } else {
       return NextResponse.json(
         { error: 'Tournament ID is required' },
@@ -46,13 +46,13 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
     
-    const response = await playerStatisticsApi.updatePlayerStats(
+    const response = await playerStatisticsApi.update(
       playerId, 
       tournamentId, 
       body
     );
 
-    return NextResponse.json(response.data);
+    return NextResponse.json(response);
   } catch (error) {
     console.error('Error updating player statistics:', error);
     return NextResponse.json(
