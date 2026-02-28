@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Trophy, Users, Calendar, BarChart3, ArrowLeft, Plus } from 'lucide-react';
+import { Trophy, Users, Calendar, BarChart3, ArrowLeft, Plus, Target, Settings, Eye, FileText } from 'lucide-react';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import { tournamentApi, Tournament } from '../../../lib/api';
 
@@ -225,34 +225,75 @@ export default function TournamentDetailPage() {
                 <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Team Management */}
                 <Link
-                  href={`/tournaments/${tournamentId}/teams`}
+                  href={`/tournaments/${tournamentId}/edit`}
                   className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
                 >
-                  <Users className="h-6 w-6 text-blue-600 mr-3" />
+                  <Settings className="h-6 w-6 text-blue-600 mr-3" />
                   <div>
-                    <p className="font-medium text-gray-900">Manage Teams</p>
-                    <p className="text-sm text-gray-500">Register and organize teams</p>
+                    <p className="font-medium text-gray-900">Tournament Settings</p>
+                    <p className="text-sm text-gray-500">Edit tournament details and teams</p>
                   </div>
                 </Link>
-                <Link
-                  href={`/tournaments/${tournamentId}/matches`}
-                  className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
-                >
-                  <Calendar className="h-6 w-6 text-green-600 mr-3" />
-                  <div>
-                    <p className="font-medium text-gray-900">Schedule Matches</p>
-                    <p className="text-sm text-gray-500">Create and manage matches</p>
-                  </div>
-                </Link>
+
+                {/* Session Management */}
                 <Link
                   href={`/tournaments/${tournamentId}/sessions`}
                   className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
                 >
                   <Plus className="h-6 w-6 text-purple-600 mr-3" />
                   <div>
-                    <p className="font-medium text-gray-900">League Sessions</p>
-                    <p className="text-sm text-gray-500">Manage tournament sessions</p>
+                    <p className="font-medium text-gray-900">Session Management</p>
+                    <p className="text-sm text-gray-500">Create and manage sessions</p>
+                  </div>
+                </Link>
+
+                {/* Match Management */}
+                <Link
+                  href="/matches"
+                  className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+                >
+                  <Calendar className="h-6 w-6 text-green-600 mr-3" />
+                  <div>
+                    <p className="font-medium text-gray-900">Match Management</p>
+                    <p className="text-sm text-gray-500">Schedule and track matches</p>
+                  </div>
+                </Link>
+
+                {/* Schedule Summary */}
+                <Link
+                  href={`/tournaments/${tournamentId}/schedule/summary`}
+                  className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+                >
+                  <Eye className="h-6 w-6 text-orange-600 mr-3" />
+                  <div>
+                    <p className="font-medium text-gray-900">Schedule Summary</p>
+                    <p className="text-sm text-gray-500">View schedule overview and validation</p>
+                  </div>
+                </Link>
+
+                {/* Detailed Statistics */}
+                <Link
+                  href={`/tournaments/${tournamentId}/detailed-statistics`}
+                  className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+                >
+                  <Target className="h-6 w-6 text-red-600 mr-3" />
+                  <div>
+                    <p className="font-medium text-gray-900">Detailed Statistics</p>
+                    <p className="text-sm text-gray-500">Advanced player and team analytics</p>
+                  </div>
+                </Link>
+
+                {/* Player Statistics */}
+                <Link
+                  href="/players"
+                  className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+                >
+                  <Users className="h-6 w-6 text-indigo-600 mr-3" />
+                  <div>
+                    <p className="font-medium text-gray-900">Player Management</p>
+                    <p className="text-sm text-gray-500">Manage players and view profiles</p>
                   </div>
                 </Link>
               </div>

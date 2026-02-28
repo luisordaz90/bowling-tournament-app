@@ -5,6 +5,8 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { tournamentApi, Tournament, teamApi, Team } from '@/lib/api';
 import Link from 'next/link';
+import { EnhancedProtectedRoute } from '@/components/rbac/EnhancedProtectedRoute';
+import { UserRole } from '@/lib/rbac';
 
 interface FormData {
   name: string;
@@ -329,7 +331,8 @@ export default function EditTournamentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <EnhancedProtectedRoute requiredRoles={[UserRole.SUPER_ADMIN, UserRole.TOURNAMENT_DIRECTOR, UserRole.LEAGUE_MANAGER]}>
+      <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
         {/* Header */}
         <div className="mb-8">
@@ -772,6 +775,7 @@ export default function EditTournamentPage() {
           </div>
         </form>
       </div>
-    </div>
+      </div>
+    </EnhancedProtectedRoute>
   );
 }

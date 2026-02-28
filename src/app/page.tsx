@@ -33,7 +33,7 @@ export default function Home() {
               </p>
               <div className="space-y-4 sm:space-y-0 sm:space-x-4 sm:flex sm:justify-center">
                 <a
-                  href="/api/auth/login"
+                  href="/auth/login"
                   className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg text-lg font-medium transition-colors inline-flex items-center justify-center"
                 >
                   Get Started

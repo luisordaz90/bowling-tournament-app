@@ -5,11 +5,15 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Plus, Users, Mail, Phone, Edit, Trash2, UserPlus } from 'lucide-react';
 import ProtectedRoute from '../components/ProtectedRoute';
+import { PermissionGate, AdminOnly } from '@/components/rbac/PermissionGate';
+import { usePermissions } from '@/hooks/usePermissions';
+import { UserRole } from '@/lib/rbac';
 import { teamApi, Team } from '../../lib/api';
 
 export default function TeamsPage() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
+  const permissions = usePermissions();
   const [error, setError] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -96,13 +100,15 @@ export default function TeamsPage() {
             <p className="mt-2 text-gray-600">Manage your bowling teams</p>
           </div>
           <div className="mt-4 sm:mt-0">
-            <button
-              onClick={() => setShowCreateForm(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Team
-            </button>
+            <PermissionGate roles={[UserRole.SUPER_ADMIN, UserRole.TOURNAMENT_DIRECTOR, UserRole.TEAM_CAPTAIN]}>
+              <button
+                onClick={() => setShowCreateForm(true)}
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                New Team
+              </button>
+            </PermissionGate>
           </div>
         </div>
 
@@ -113,7 +119,7 @@ export default function TeamsPage() {
         )}
 
         {/* Create Team Form */}
-        {showCreateForm && (
+        {showCreateForm && permissions.canCreateTeam && (
           <div className="mt-6 bg-white shadow rounded-lg p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Create New Team</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -265,18 +271,24 @@ export default function TeamsPage() {
                       View Details
                     </Link>
                     <div className="flex space-x-2">
-                      <button
-                        onClick={() => {/* TODO: Implement edit */}}
-                        className="text-gray-600 hover:text-gray-800"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => deleteTeam(team.id)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <PermissionGate roles={[UserRole.SUPER_ADMIN, UserRole.TOURNAMENT_DIRECTOR, UserRole.LEAGUE_MANAGER, UserRole.TEAM_CAPTAIN]}>
+                        <button
+                          onClick={() => {/* TODO: Implement edit */}}
+                          className="text-gray-600 hover:text-gray-800"
+                          title="Edit team"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                      </PermissionGate>
+                      <AdminOnly>
+                        <button
+                          onClick={() => deleteTeam(team.id)}
+                          className="text-red-600 hover:text-red-800"
+                          title="Delete team"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </AdminOnly>
                     </div>
                   </div>
                 </div>

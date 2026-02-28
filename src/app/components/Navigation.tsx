@@ -338,7 +338,7 @@ const Navigation = () => {
             </div>
             <div className="flex items-center">
               <a
-                href="/api/auth/login"
+                href="/auth/login"
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
               >
                 Sign In

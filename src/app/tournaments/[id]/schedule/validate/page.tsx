@@ -3,6 +3,8 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import { EnhancedProtectedRoute } from '@/components/rbac/EnhancedProtectedRoute';
+import { UserRole } from '@/lib/rbac';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -205,19 +207,19 @@ export default function ScheduleValidationPage() {
 
   if (loading) {
     return (
-      <ProtectedRoute>
+      <EnhancedProtectedRoute requiredRoles={[UserRole.SUPER_ADMIN, UserRole.TOURNAMENT_DIRECTOR, UserRole.LEAGUE_MANAGER]}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-center min-h-64">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
         </div>
-      </ProtectedRoute>
+      </EnhancedProtectedRoute>
     );
   }
 
   if (error) {
     return (
-      <ProtectedRoute>
+      <EnhancedProtectedRoute requiredRoles={[UserRole.SUPER_ADMIN, UserRole.TOURNAMENT_DIRECTOR, UserRole.LEAGUE_MANAGER]}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-red-50 border border-red-200 rounded-md p-4">
             <div className="flex">
@@ -229,12 +231,12 @@ export default function ScheduleValidationPage() {
             </div>
           </div>
         </div>
-      </ProtectedRoute>
+      </EnhancedProtectedRoute>
     );
   }
 
   return (
-    <ProtectedRoute>
+    <EnhancedProtectedRoute requiredRoles={[UserRole.SUPER_ADMIN, UserRole.TOURNAMENT_DIRECTOR, UserRole.LEAGUE_MANAGER]}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -442,6 +444,6 @@ export default function ScheduleValidationPage() {
           </>
         )}
       </div>
-    </ProtectedRoute>
+    </EnhancedProtectedRoute>
   );
 };

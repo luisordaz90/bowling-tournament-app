@@ -38,6 +38,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { Auth0Provider } from '@auth0/nextjs-auth0';
 import Navigation from './components/Navigation';
+import { RBACProvider } from '@/contexts/RBACContext';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -55,10 +56,12 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <Auth0Provider>
-          <div className="min-h-screen bg-gray-50">
-            <Navigation />
-            <main>{children}</main>
-          </div>
+          <RBACProvider>
+            <div className="min-h-screen bg-gray-50">
+              <Navigation />
+              <main>{children}</main>
+            </div>
+          </RBACProvider>
         </Auth0Provider>
       </body>
     </html>
