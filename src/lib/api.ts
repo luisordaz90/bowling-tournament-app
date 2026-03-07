@@ -162,17 +162,44 @@ export interface RoundRobinPreview {
 
 // API utility class
 class ApiClient {
+  private tokenCache: { token: string; expires: number } | null = null;
+
+  private async getAccessToken(): Promise<string | null> {
+    if (typeof window === 'undefined') return null;
+
+    const now = Date.now();
+    if (this.tokenCache && this.tokenCache.expires > now) {
+      return this.tokenCache.token;
+    }
+
+    try {
+      const res = await fetch('/api/auth/token');
+      if (!res.ok) return null;
+      const { accessToken } = await res.json();
+      if (!accessToken) return null;
+      // Cache for 50 minutes (tokens typically expire in 60 min)
+      this.tokenCache = { token: accessToken, expires: now + 50 * 60 * 1000 };
+      return accessToken;
+    } catch {
+      return null;
+    }
+  }
+
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    console.log("ENTRO AQUI");
     const url = `${API_BASE}${endpoint}`;
-    const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      ...options,
-    });
-    console.log(response);
+    const token = await this.getAccessToken();
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(options.headers as Record<string, string>),
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(url, { ...options, headers });
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
       throw new Error(errorData.error || `HTTP error! status: ${response.status}`);

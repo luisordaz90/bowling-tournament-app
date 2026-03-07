@@ -51,7 +51,7 @@ export enum Permission {
 }
 
 // Custom claims namespace for our app
-const CLAIMS_NAMESPACE = 'https://bowling-app.com';
+const CLAIMS_NAMESPACE = 'https://bowling-tournament-api.com';
 
 // Interface for user claims from JWT token
 export interface UserClaims {

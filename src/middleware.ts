@@ -3,10 +3,6 @@ import type { NextRequest } from "next/server"
 import { auth0 } from "./lib/auth0" // Adjust path if your auth0 client is elsewhere
 
 export async function middleware(request: NextRequest) {
-console.log(request.nextUrl.pathname);
-if (request.nextUrl.pathname === '/auth/callback') {
-    console.log("CALLBACK");
-}
   return await auth0.middleware(request)
 }
 
