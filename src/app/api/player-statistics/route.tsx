@@ -1,6 +1,6 @@
 // src/app/api/player-statistics/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { playerStatisticsApi, tournamentApi } from '../../../lib/api';
+import { api } from '../../../lib/api';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -10,11 +10,11 @@ export async function GET(request: NextRequest) {
   try {
     if (tournamentId && playerId) {
       // Get specific player statistics for a tournament
-      const response = await tournamentApi.getPlayerStatistics(tournamentId, playerId);
+      const response = await api.statistics.getPlayerStats(tournamentId, playerId);
       return NextResponse.json(response);
     } else if (tournamentId) {
       // Get all player statistics for a tournament
-      const response = await tournamentApi.getAllPlayerStatistics(tournamentId);
+      const response = await api.statistics.getAllPlayerStats(tournamentId);
       return NextResponse.json(response);
     } else {
       return NextResponse.json(
@@ -46,11 +46,7 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
     
-    const response = await playerStatisticsApi.update(
-      playerId, 
-      tournamentId, 
-      body
-    );
+    const response = await api.statistics.updatePlayerStats(playerId, tournamentId, body);
 
     return NextResponse.json(response);
   } catch (error) {

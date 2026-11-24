@@ -19,7 +19,8 @@ import {
   Users,
   BarChart3
 } from 'lucide-react';
-import { tournamentApi, matchApi, Tournament, Match, Team } from '../../../../../../lib/api';
+import { api, Tournament, Match, Team } from '../../../../../../lib/api';
+import Breadcrumb from '../../../../../components/Breadcrumb';
 
 export default function SessionMatchesPage() {
   const params = useParams();
@@ -42,15 +43,15 @@ export default function SessionMatchesPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [tournamentData, allMatches, teamsData] = await Promise.all([
-        tournamentApi.getById(tournamentId),
-        tournamentApi.getMatches(tournamentId),
-        tournamentApi.getRegisteredTeams(tournamentId)
+      const [tournamentData, sessionMatchesData, teamsData] = await Promise.all([
+        api.tournaments.getById(tournamentId),
+        api.sessions.getMatches(tournamentId, sessionNumber),
+        api.registrations.getTeams(tournamentId)
       ]);
 
       setTournament(tournamentData);
-      setMatches(allMatches.filter(match => match.sessionNumber === sessionNumber));
-      setTeams(teamsData.map(reg => reg.teamDetails));
+      setMatches(sessionMatchesData.matches || sessionMatchesData);
+      setTeams(teamsData.map((reg: any) => reg.teamDetails));
       setError(null);
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -62,7 +63,7 @@ export default function SessionMatchesPage() {
 
   const updateMatchStatus = async (matchId: string, status: string) => {
     try {
-      await matchApi.updateStatus(matchId, status);
+      await api.matches.updateStatus(matchId, status);
       await fetchData();
     } catch (err: any) {
       console.error('Error updating match status:', err);
@@ -126,6 +127,13 @@ export default function SessionMatchesPage() {
   return (
     <EnhancedProtectedRoute>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <Breadcrumb items={[
+        { label: 'Tournaments', href: '/tournaments' },
+        { label: tournament?.name || 'Tournament', href: `/tournaments/${tournamentId}` },
+        { label: 'Sessions', href: `/tournaments/${tournamentId}/sessions` },
+        { label: `Session ${sessionNumber}` },
+        { label: 'Matches' },
+      ]} />
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center">
@@ -268,7 +276,7 @@ export default function SessionMatchesPage() {
                     </div>
 
                     <div className="flex items-center space-x-2">
-                      <PermissionGate roles={[UserRole.SUPER_ADMIN, UserRole.TOURNAMENT_DIRECTOR, UserRole.LEAGUE_MANAGER, UserRole.SCOREKEEPER]}>
+                      <PermissionGate roles={[UserRole.SUPER_ADMIN, UserRole.LEAGUE_ADMIN]}>
                         {match.status === 'scheduled' && (
                           <>
                             <button
@@ -306,6 +314,13 @@ export default function SessionMatchesPage() {
                           </button>
                         )}
                       </PermissionGate>
+                      <Link
+                        href={`/tournaments/${tournamentId}/sessions/${sessionNumber}/score`}
+                        className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700"
+                      >
+                        <BarChart3 className="h-3 w-3 mr-1" />
+                        Report Scores
+                      </Link>
                       <Link
                         href={`/matches/${match.id}`}
                         className="text-blue-600 hover:text-blue-800 text-sm font-medium"

@@ -2,46 +2,39 @@
 'use client';
 
 import React, { createContext, useContext, ReactNode } from 'react';
-import { useUserClaims, UserClaims, UserRole, Permission, RBAC } from '@/lib/rbac';
+import { useUserClaims, UserClaims, UserRole, RBAC } from '@/lib/rbac';
 
 interface RBACContextType {
   claims: UserClaims | null;
   isLoading: boolean;
-  error: Error | undefined;
-  
-  // Convenience methods
+  error: Error | null | undefined;
+
   hasRole: (role: UserRole) => boolean;
   hasAnyRole: (roles: UserRole[]) => boolean;
-  hasPermission: (permission: Permission) => boolean;
-  hasAnyPermission: (permissions: Permission[]) => boolean;
-  
-  // Common RBAC checks
+
+  // Pre-computed checks
   canCreateTournament: boolean;
   canEditTournament: boolean;
   canDeleteTournament: boolean;
   canCreateTeam: boolean;
   canEditTeam: boolean;
+  canCreatePlayer: boolean;
   canManageMatches: boolean;
-  canScoreMatches: boolean;
+  canSubmitScores: boolean;
+  canUpdateScores: boolean;
   canManageSessions: boolean;
-  canViewDetailedStatistics: boolean;
+  canUpdateStatistics: boolean;
   canManageUsers: boolean;
-  canAccessSystemSettings: boolean;
   isAdmin: boolean;
-  isManager: boolean;
+  isAdminOrLeagueAdmin: boolean;
   canWriteData: boolean;
 }
 
 const RBACContext = createContext<RBACContextType | undefined>(undefined);
 
-interface RBACProviderProps {
-  children: ReactNode;
-}
-
-export function RBACProvider({ children }: RBACProviderProps) {
+export function RBACProvider({ children }: { children: ReactNode }) {
   const { claims, isLoading, error } = useUserClaims();
 
-  // Helper functions that use current user claims
   const hasRole = (role: UserRole) => {
     if (!claims) return false;
     return claims.roles.includes(role);
@@ -52,43 +45,28 @@ export function RBACProvider({ children }: RBACProviderProps) {
     return roles.some(role => claims.roles.includes(role));
   };
 
-  const hasPermission = (permission: Permission) => {
-    if (!claims) return false;
-    return claims.permissions.includes(permission);
-  };
-
-  const hasAnyPermission = (permissions: Permission[]) => {
-    if (!claims) return false;
-    return permissions.some(permission => claims.permissions.includes(permission));
-  };
-
-  // Pre-computed common checks
   const contextValue: RBACContextType = {
     claims,
     isLoading,
     error,
-    
-    // Helper methods
     hasRole,
     hasAnyRole,
-    hasPermission,
-    hasAnyPermission,
-    
-    // Pre-computed RBAC checks
+
     canCreateTournament: RBAC.canCreateTournament(claims),
     canEditTournament: RBAC.canEditTournament(claims),
     canDeleteTournament: RBAC.canDeleteTournament(claims),
     canCreateTeam: RBAC.canCreateTeam(claims),
     canEditTeam: RBAC.canEditTeam(claims),
+    canCreatePlayer: RBAC.canCreatePlayer(claims),
     canManageMatches: RBAC.canManageMatches(claims),
-    canScoreMatches: RBAC.canScoreMatches(claims),
+    canSubmitScores: RBAC.canSubmitScores(claims),
+    canUpdateScores: RBAC.canUpdateScores(claims),
     canManageSessions: RBAC.canManageSessions(claims),
-    canViewDetailedStatistics: RBAC.canViewDetailedStatistics(claims),
+    canUpdateStatistics: RBAC.canUpdateStatistics(claims),
     canManageUsers: RBAC.canManageUsers(claims),
-    canAccessSystemSettings: RBAC.canAccessSystemSettings(claims),
     isAdmin: RBAC.isAdmin(claims),
-    isManager: RBAC.isManager(claims),
-    canWriteData: RBAC.canWriteData(claims)
+    isAdminOrLeagueAdmin: RBAC.isAdminOrLeagueAdmin(claims),
+    canWriteData: RBAC.canWriteData(claims),
   };
 
   return (

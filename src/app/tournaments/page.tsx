@@ -2,14 +2,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-//import { useUser } from '@auth0/nextjs-auth0';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Plus, Trophy, Calendar, Users, BarChart3, Edit, Trash2 } from 'lucide-react';
 import ProtectedRoute from '../components/ProtectedRoute';
-import { tournamentApi, Tournament } from '../../lib/api';
+import { api, Tournament } from '../../lib/api';
 
 export default function TournamentsPage() {
-  //const { user } = useUser();
+  const t = useTranslations('tournaments');
+  const tc = useTranslations('common');
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,11 +22,11 @@ export default function TournamentsPage() {
   const fetchTournaments = async () => {
     try {
       setLoading(true);
-      const response = await tournamentApi.getAll();
+      const response = await api.tournaments.getAll();
       setTournaments(response);
       setError(null);
     } catch (err) {
-      setError('Failed to fetch tournaments');
+      setError(tc('failedToFetch'));
       console.error('Error fetching tournaments:', err);
     } finally {
       setLoading(false);
@@ -33,15 +34,15 @@ export default function TournamentsPage() {
   };
 
   const deleteTournament = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this tournament? This action cannot be undone.')) {
+    if (!confirm(t('confirmDelete'))) {
       return;
     }
 
     try {
-      await tournamentApi.delete(id);
+      await api.tournaments.delete(id);
       setTournaments(tournaments.filter(t => t.id !== id));
     } catch (err) {
-      alert('Failed to delete tournament');
+      alert(tc('failedToDelete'));
       console.error('Error deleting tournament:', err);
     }
   };
@@ -59,6 +60,11 @@ export default function TournamentsPage() {
     }
   };
 
+  const getStatusLabel = (status: string) => {
+    const key = status as 'draft' | 'active' | 'completed' | 'cancelled';
+    return t(`status.${key}`);
+  };
+
   if (loading) {
     return (
       <ProtectedRoute>
@@ -74,8 +80,8 @@ export default function TournamentsPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="sm:flex sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Tournaments</h1>
-            <p className="mt-2 text-gray-600">Manage your bowling tournaments</p>
+            <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+            <p className="mt-2 text-gray-600">{t('subtitle')}</p>
           </div>
           <div className="mt-4 sm:mt-0">
             <Link
@@ -83,7 +89,7 @@ export default function TournamentsPage() {
               className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               <Plus className="h-4 w-4 mr-2" />
-              New Tournament
+              {t('create')}
             </Link>
           </div>
         </div>
@@ -97,15 +103,15 @@ export default function TournamentsPage() {
         {tournaments.length === 0 ? (
           <div className="mt-8 text-center">
             <Trophy className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No tournaments</h3>
-            <p className="mt-1 text-sm text-gray-500">Get started by creating a new tournament.</p>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">{t('noTournaments')}</h3>
+            <p className="mt-1 text-sm text-gray-500">{t('noTournamentsHint')}</p>
             <div className="mt-6">
               <Link
                 href="/tournaments/new"
                 className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                New Tournament
+                {t('create')}
               </Link>
             </div>
           </div>
@@ -125,7 +131,7 @@ export default function TournamentsPage() {
                           {tournament.name}
                         </h3>
                         <p className="text-sm text-gray-500">
-                          {tournament.sessionType} • {tournament.totalSessions} sessions
+                          {tournament.sessionType} • {tournament.totalSessions} {tc('sessions')}
                         </p>
                       </div>
                     </div>
@@ -134,7 +140,7 @@ export default function TournamentsPage() {
                         tournament.status
                       )}`}
                     >
-                      {tournament.status}
+                      {getStatusLabel(tournament.status)}
                     </span>
                   </div>
 
@@ -151,13 +157,13 @@ export default function TournamentsPage() {
                     </div>
                     <div className="flex items-center">
                       <Users className="h-4 w-4 mr-1" />
-                      <span>Max {tournament.maxTeams} teams</span>
+                      <span>{tc('maxTeams', { count: tournament.maxTeams })}</span>
                     </div>
                   </div>
 
                   <div className="mt-4 flex items-center justify-between">
                     <div className="text-sm text-gray-500">
-                      Progress: {tournament.sessionsCompleted}/{tournament.totalSessions}
+                      {tc('progress')}: {tournament.sessionsCompleted}/{tournament.totalSessions}
                     </div>
                     <div className="flex space-x-2">
                       <Link

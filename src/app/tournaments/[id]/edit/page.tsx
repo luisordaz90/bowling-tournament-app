@@ -3,10 +3,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { tournamentApi, Tournament, teamApi, Team } from '@/lib/api';
+import { api, Tournament, Team } from '@/lib/api';
 import Link from 'next/link';
 import { EnhancedProtectedRoute } from '@/components/rbac/EnhancedProtectedRoute';
 import { UserRole } from '@/lib/rbac';
+import Breadcrumb from '@/app/components/Breadcrumb';
 
 interface FormData {
   name: string;
@@ -68,7 +69,7 @@ export default function EditTournamentPage() {
         setIsLoading(true);
         
         // Load tournament data
-        const tournamentResponse = await tournamentApi.getById(tournamentId);
+        const tournamentResponse = await api.tournaments.getById(tournamentId);
         const tournament = tournamentResponse;
 
         // Format dates for input fields
@@ -90,11 +91,11 @@ export default function EditTournamentPage() {
         });
 
         // Load all teams
-        const teamsResponse = await teamApi.getAll();
+        const teamsResponse = await api.teams.getAll();
         setAllTeams(teamsResponse);
 
         // Load registered teams for this tournament
-        const registeredTeamsResponse = await tournamentApi.getRegisteredTeams(tournamentId);
+        const registeredTeamsResponse = await api.registrations.getTeams(tournamentId);
         setRegisteredTeams(registeredTeamsResponse);
 
       } catch (error) {
@@ -215,7 +216,7 @@ export default function EditTournamentPage() {
         sessionsCompleted: formData.sessionsCompleted ? parseInt(formData.sessionsCompleted) : 0,
       };
 
-      await tournamentApi.update(tournamentId, updateData);
+      await api.tournaments.update(tournamentId, updateData);
       
       setSubmitMessage({
         type: 'success',
@@ -269,10 +270,10 @@ export default function EditTournamentPage() {
         registrationData.seedNumber = parseInt(seedNumber);
       }
 
-      await tournamentApi.registerTeam(tournamentId, registrationData);
-      
+      await api.registrations.registerTeam({ tournamentId, ...registrationData });
+
       // Reload registered teams
-      const registeredTeamsResponse = await tournamentApi.getRegisteredTeams(tournamentId);
+      const registeredTeamsResponse = await api.registrations.getTeams(tournamentId);
       setRegisteredTeams(registeredTeamsResponse);
       
       // Clear form
@@ -300,17 +301,15 @@ export default function EditTournamentPage() {
     }
 
     try {
-      // Note: The API doesn't have a direct remove team endpoint, 
-      // so this would need to be implemented in the backend
-      setTeamMessage({
-        type: 'error',
-        text: 'Team removal is not yet implemented in the API.'
-      });
+      await api.registrations.unregisterTeam(teamId, tournamentId);
+      const registeredTeamsResponse = await api.registrations.getTeams(tournamentId);
+      setRegisteredTeams(registeredTeamsResponse);
+      setTeamMessage({ type: 'success', text: 'Team removed from tournament.' });
     } catch (error: any) {
       console.error('Failed to remove team:', error);
       setTeamMessage({
         type: 'error',
-        text: 'Failed to remove team. Please try again.'
+        text: error.message || 'Failed to remove team. Please try again.'
       });
     }
   };
@@ -331,9 +330,14 @@ export default function EditTournamentPage() {
   }
 
   return (
-    <EnhancedProtectedRoute requiredRoles={[UserRole.SUPER_ADMIN, UserRole.TOURNAMENT_DIRECTOR, UserRole.LEAGUE_MANAGER]}>
+    <EnhancedProtectedRoute requiredRoles={[UserRole.SUPER_ADMIN, UserRole.LEAGUE_ADMIN]}>
       <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
+        <Breadcrumb items={[
+          { label: 'Tournaments', href: '/tournaments' },
+          { label: formData.name || 'Tournament', href: `/tournaments/${tournamentId}` },
+          { label: 'Edit' },
+        ]} />
         {/* Header */}
         <div className="mb-8">
           <Link 

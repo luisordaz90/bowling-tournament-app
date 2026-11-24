@@ -1,0 +1,120 @@
+{
+  "nav": {
+    "tournaments": "Tournaments",
+    "teams": "Teams",
+    "players": "Players",
+    "matches": "Matches",
+    "statistics": "Statistics",
+    "signOut": "Sign Out",
+    "signIn": "Sign In",
+    "welcome": "Welcome, {name}"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "noResults": "No results found",
+    "confirm": "Are you sure?",
+    "confirmDelete": "Are you sure you want to delete this? This action cannot be undone.",
+    "back": "Back",
+    "actions": "Actions",
+    "status": "Status",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "viewDetails": "View Details",
+    "registered": "Registered",
+    "progress": "Progress",
+    "sessions": "sessions",
+    "maxTeams": "Max {count} teams",
+    "new": "New",
+    "getStarted": "Get started by creating a new one.",
+    "failedToFetch": "Failed to fetch data",
+    "failedToCreate": "Failed to create",
+    "failedToDelete": "Failed to delete",
+    "average": "Average",
+    "games": "Games",
+    "totalPins": "Total Pins",
+    "na": "N/A",
+    "teamName": "Team Name"
+  },
+  "tournaments": {
+    "title": "Tournaments",
+    "subtitle": "Manage your bowling tournaments",
+    "create": "New Tournament",
+    "noTournaments": "No tournaments",
+    "noTournamentsHint": "Get started by creating a new tournament.",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "maxTeams": "Max Teams",
+    "totalSessions": "Total Sessions",
+    "sessionType": "Session Type",
+    "confirmDelete": "Are you sure you want to delete this tournament? This action cannot be undone.",
+    "status": {
+      "draft": "Draft",
+      "active": "Active",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    }
+  },
+  "teams": {
+    "title": "Teams",
+    "subtitle": "Manage your bowling teams",
+    "create": "New Team",
+    "createTitle": "Create New Team",
+    "noTeams": "No teams",
+    "noTeamsHint": "Get started by creating a new team.",
+    "captainName": "Captain Name",
+    "captainEmail": "Captain Email",
+    "captainPhone": "Captain Phone",
+    "teamNamePlaceholder": "Team name",
+    "captainNamePlaceholder": "Captain's full name",
+    "captainEmailPlaceholder": "captain@example.com",
+    "captainPhonePlaceholder": "(555) 123-4567",
+    "confirmDelete": "Are you sure you want to delete this team?",
+    "roster": "Roster",
+    "addToTournament": "Add to Tournament",
+    "removeFromTournament": "Remove from Tournament"
+  },
+  "players": {
+    "title": "Players",
+    "subtitle": "Manage bowling players and their statistics",
+    "create": "New Player",
+    "createTitle": "Create New Player",
+    "noPlayers": "No players",
+    "noPlayersHint": "Get started by adding a new player.",
+    "playerName": "Player Name",
+    "playerNamePlaceholder": "Player's full name",
+    "emailPlaceholder": "player@example.com",
+    "phonePlaceholder": "(555) 123-4567",
+    "handicap": "Handicap",
+    "averageScore": "Average Score",
+    "gamesPlayed": "Games Played",
+    "confirmDelete": "Are you sure you want to delete this player?",
+    "status": {
+      "invited": "Invited",
+      "active": "Active"
+    }
+  },
+  "roster": {
+    "addPlayer": "Add Player",
+    "removePlayer": "Remove Player",
+    "role": "Role",
+    "roles": {
+      "captain": "Captain",
+      "regular": "Regular",
+      "substitute": "Substitute"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "recentScores": "Recent Scores",
+    "currentTeams": "Current Teams",
+    "overallStats": "Overall Statistics"
+  }
+}

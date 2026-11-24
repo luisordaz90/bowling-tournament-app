@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import ProtectedRoute from '../../../../components/ProtectedRoute';
 import { api, Tournament } from '../../../../../lib/api';
+import Breadcrumb from '../../../../components/Breadcrumb';
 
 interface ValidationIssue {
   type: string;
@@ -81,7 +82,7 @@ export default function ScheduleValidationPage() {
   const fetchValidation = async () => {
     try {
       setLoading(true);
-      const data = await api.tournaments.validateSchedule(tournamentId);
+      const data = await api.schedule.validate(tournamentId);
       setValidation(data);
       setError(null);
     } catch (err: any) {
@@ -207,7 +208,7 @@ export default function ScheduleValidationPage() {
 
   if (loading) {
     return (
-      <EnhancedProtectedRoute requiredRoles={[UserRole.SUPER_ADMIN, UserRole.TOURNAMENT_DIRECTOR, UserRole.LEAGUE_MANAGER]}>
+      <EnhancedProtectedRoute requiredRoles={[UserRole.SUPER_ADMIN, UserRole.LEAGUE_ADMIN]}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-center min-h-64">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -219,7 +220,7 @@ export default function ScheduleValidationPage() {
 
   if (error) {
     return (
-      <EnhancedProtectedRoute requiredRoles={[UserRole.SUPER_ADMIN, UserRole.TOURNAMENT_DIRECTOR, UserRole.LEAGUE_MANAGER]}>
+      <EnhancedProtectedRoute requiredRoles={[UserRole.SUPER_ADMIN, UserRole.LEAGUE_ADMIN]}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-red-50 border border-red-200 rounded-md p-4">
             <div className="flex">
@@ -236,8 +237,13 @@ export default function ScheduleValidationPage() {
   }
 
   return (
-    <EnhancedProtectedRoute requiredRoles={[UserRole.SUPER_ADMIN, UserRole.TOURNAMENT_DIRECTOR, UserRole.LEAGUE_MANAGER]}>
+    <EnhancedProtectedRoute requiredRoles={[UserRole.SUPER_ADMIN, UserRole.LEAGUE_ADMIN]}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Breadcrumb items={[
+          { label: 'Tournaments', href: '/tournaments' },
+          { label: tournament?.name || 'Tournament', href: `/tournaments/${tournamentId}` },
+          { label: 'Schedule Validation' },
+        ]} />
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">

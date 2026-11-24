@@ -19,7 +19,8 @@ import {
   Target,
   TrendingUp
 } from 'lucide-react';
-import { tournamentApi, Tournament, ScheduleSummary, Match, LeagueSession as Session } from '../../../../../lib/api';
+import { api, Tournament, ScheduleSummary, Match, LeagueSession as Session } from '../../../../../lib/api';
+import Breadcrumb from '../../../../components/Breadcrumb';
 
 export default function ScheduleSummaryPage() {
   const params = useParams();
@@ -37,10 +38,10 @@ export default function ScheduleSummaryPage() {
     try {
       setLoading(true);
       const [tournamentData, summaryData, matchesData, sessionsData] = await Promise.all([
-        tournamentApi.getById(tournamentId),
-        tournamentApi.getScheduleSummary(tournamentId),
-        tournamentApi.getMatches(tournamentId),
-        tournamentApi.getSessions(tournamentId)
+        api.tournaments.getById(tournamentId),
+        api.schedule.getSummary(tournamentId),
+        api.matches.getAll(tournamentId),
+        api.sessions.getAll(tournamentId)
       ]);
 
       setTournament(tournamentData);
@@ -382,6 +383,11 @@ export default function ScheduleSummaryPage() {
   return (
     <EnhancedProtectedRoute>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <Breadcrumb items={[
+        { label: 'Tournaments', href: '/tournaments' },
+        { label: tournament?.name || 'Tournament', href: `/tournaments/${tournamentId}` },
+        { label: 'Schedule Summary' },
+      ]} />
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center">

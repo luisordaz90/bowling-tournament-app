@@ -23,11 +23,11 @@ import {
   Medal
 } from 'lucide-react';
 import ProtectedRoute from '../../components/ProtectedRoute';
-import { 
-  teamApi, 
-  tournamentApi, 
-  Team, 
-  Tournament, 
+import Breadcrumb from '../../components/Breadcrumb';
+import {
+  api,
+  Team,
+  Tournament,
 } from '../../../lib/api';
 
 export default function TeamDetailPage() {
@@ -42,6 +42,11 @@ export default function TeamDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // Roster state
+  const [rosterTournamentId, setRosterTournamentId] = useState<string>('');
+  const [roster, setRoster] = useState<any[]>([]);
+  const [rosterLoading, setRosterLoading] = useState(false);
+
   useEffect(() => {
     if (teamId) {
       fetchTeamData();
@@ -54,8 +59,8 @@ export default function TeamDetailPage() {
       
       // Fetch team details
       const [teamResponse, tournamentsResponse] = await Promise.all([
-        teamApi.getById(teamId),
-        tournamentApi.getAll()
+        api.teams.getById(teamId),
+        api.tournaments.getAll()
       ]);
       
       setTeam(teamResponse);
@@ -64,8 +69,8 @@ export default function TeamDetailPage() {
       // Fetch team statistics for each tournament
       const statsPromises = tournamentsResponse.map(async (tournament) => {
         try {
-          const statsResponse = await tournamentApi.getTeamStatistics(
-            tournament.id, 
+          const statsResponse = await api.statistics.getTeamStats(
+            tournament.id,
             teamId
           );
           return {
@@ -91,6 +96,20 @@ export default function TeamDetailPage() {
     }
   };
 
+  const handleRosterTournamentChange = async (tournamentId: string) => {
+    setRosterTournamentId(tournamentId);
+    if (!tournamentId) { setRoster([]); return; }
+    setRosterLoading(true);
+    try {
+      const players = await api.registrations.getPlayers(tournamentId, teamId);
+      setRoster(players);
+    } catch {
+      setRoster([]);
+    } finally {
+      setRosterLoading(false);
+    }
+  };
+
   const handleDeleteTeam = async () => {
     if (!team) return;
     
@@ -102,7 +121,7 @@ export default function TeamDetailPage() {
 
     try {
       setDeleteLoading(true);
-      await teamApi.delete(teamId);
+      await api.teams.delete(teamId);
       router.push('/teams');
     } catch (err) {
       console.error('Error deleting team:', err);
@@ -190,6 +209,10 @@ export default function TeamDetailPage() {
   return (
     <ProtectedRoute>
       <div className="container-wide py-8">
+        <Breadcrumb items={[
+          { label: 'Teams', href: '/teams' },
+          { label: team?.name || 'Team' },
+        ]} />
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-4">
@@ -499,6 +522,59 @@ export default function TeamDetailPage() {
                         })}
                       </tbody>
                     </table>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Tournament Roster */}
+            <div className="card mt-6">
+              <div className="card-header">
+                <h3 className="text-lg font-medium text-gray-900">Tournament Roster</h3>
+              </div>
+              <div className="card-body">
+                <div className="mb-4">
+                  <label className="form-label mb-1">Select Tournament</label>
+                  <select
+                    value={rosterTournamentId}
+                    onChange={(e) => handleRosterTournamentChange(e.target.value)}
+                    className="form-input"
+                  >
+                    <option value="">— Choose a tournament —</option>
+                    {tournaments.map((t) => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {rosterLoading && (
+                  <div className="flex items-center justify-center py-6">
+                    <div className="spinner h-6 w-6"></div>
+                  </div>
+                )}
+
+                {!rosterLoading && rosterTournamentId && roster.length === 0 && (
+                  <p className="text-sm text-gray-500 text-center py-4">No players on roster for this tournament.</p>
+                )}
+
+                {!rosterLoading && roster.length > 0 && (
+                  <div className="space-y-2">
+                    {roster.map((entry: any) => (
+                      <div key={entry.playerId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-sm font-medium text-blue-700">
+                            {entry.playerDetails?.name?.charAt(0) || '?'}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{entry.playerDetails?.name || 'Unknown'}</p>
+                            <p className="text-xs text-gray-500 capitalize">{entry.role}</p>
+                          </div>
+                        </div>
+                        <div className="text-right text-sm text-gray-500">
+                          {entry.status || 'active'}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

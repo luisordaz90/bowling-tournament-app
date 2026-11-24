@@ -20,6 +20,7 @@ import {
   X
 } from 'lucide-react';
 import ProtectedRoute from '../../components/ProtectedRoute';
+import Breadcrumb from '../../components/Breadcrumb';
 import { api, Match, Team, Player, PlayerMatchScore, TeamMatchScore } from '../../../lib/api';
 
 interface TeamPlayer {
@@ -43,7 +44,7 @@ export default function MatchDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'scores' | 'summary'>('scores');
-  const [editingScore, setEditingScore] = useState<string | null>(null);
+  const [editingScoreId, setEditingScoreId] = useState<string | null>(null);
   const [newScore, setNewScore] = useState({
     playerId: '',
     teamId: '',
@@ -78,8 +79,8 @@ export default function MatchDetailsPage() {
       // Fetch team players
       if (matchData.tournamentId) {
         const [homePlayersData, awayPlayersData] = await Promise.all([
-          api.tournaments.getTeamPlayers(matchData.tournamentId, matchData.homeTeamId),
-          api.tournaments.getTeamPlayers(matchData.tournamentId, matchData.awayTeamId)
+          api.registrations.getPlayers(matchData.tournamentId, matchData.homeTeamId),
+          api.registrations.getPlayers(matchData.tournamentId, matchData.awayTeamId)
         ]);
         setHomeTeamPlayers(homePlayersData);
         setAwayTeamPlayers(awayPlayersData);
@@ -99,11 +100,32 @@ export default function MatchDetailsPage() {
 
   const fetchScores = async () => {
     try {
-      const [playerScoresData, teamScoresData] = await Promise.all([
+      const [playerScoresRaw, teamScoresData] = await Promise.all([
         api.matches.getPlayerScores(matchId),
         api.matches.getTeamScores(matchId)
       ]);
-      setPlayerScores(playerScoresData);
+      // Transform API shape (scores array) into flat game1/2/3 shape the UI expects
+      const transformed = (playerScoresRaw as any[]).map((p: any) => {
+        const scoresByGame: Record<number, number> = {};
+        (p.scores || []).forEach((s: any) => { scoresByGame[s.gameNumber] = s.score; });
+        const g1 = scoresByGame[1] || 0;
+        const g2 = scoresByGame[2] || 0;
+        const g3 = scoresByGame[3] || 0;
+        const total = g1 + g2 + g3;
+        return {
+          id: p.playerId,
+          matchId,
+          teamId: p.teamId,
+          playerId: p.playerId,
+          game1Score: g1,
+          game2Score: g2,
+          game3Score: g3,
+          totalScore: total,
+          handicapApplied: p.handicapApplied || 0,
+          finalScore: total + ((p.handicapApplied || 0) * (p.scores?.length || 0)),
+        } as PlayerMatchScore;
+      });
+      setPlayerScores(transformed);
       setTeamScores(teamScoresData);
     } catch (err) {
       console.error('Error fetching scores:', err);
@@ -121,6 +143,25 @@ export default function MatchDetailsPage() {
     }
   };
 
+  const resetScoreForm = () => {
+    setNewScore({ playerId: '', teamId: '', game1Score: 0, game2Score: 0, game3Score: 0, handicapApplied: 0 });
+    setEditingScoreId(null);
+  };
+
+  const handleEditScore = (score: PlayerMatchScore) => {
+    setEditingScoreId(score.id);
+    setNewScore({
+      playerId: score.playerId,
+      teamId: score.teamId,
+      game1Score: score.game1Score,
+      game2Score: score.game2Score,
+      game3Score: score.game3Score,
+      handicapApplied: score.handicapApplied,
+    });
+    // Scroll to the score form
+    document.getElementById('score-form')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   const addPlayerScore = async () => {
     if (!newScore.playerId || !newScore.teamId) {
       alert('Please select a player and team');
@@ -130,20 +171,9 @@ export default function MatchDetailsPage() {
     try {
       await api.matches.addPlayerScore(matchId, newScore);
       await fetchScores();
-      
-      // Reset form
-      setNewScore({
-        playerId: '',
-        teamId: '',
-        game1Score: 0,
-        game2Score: 0,
-        game3Score: 0,
-        handicapApplied: 0
-      });
-      
-      setEditingScore(null);
+      resetScoreForm();
     } catch (err: any) {
-      alert(`Failed to add player score: ${err.message}`);
+      alert(`Failed to save player score: ${err.message}`);
     }
   };
 
@@ -231,6 +261,10 @@ export default function MatchDetailsPage() {
   return (
     <ProtectedRoute>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Breadcrumb items={[
+          { label: 'Matches', href: '/matches' },
+          { label: 'Match Details' },
+        ]} />
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
@@ -321,31 +355,50 @@ export default function MatchDetailsPage() {
         {/* Tab Content */}
         {activeTab === 'scores' && (
           <div className="space-y-8">
-            {/* Add New Score */}
+            {/* Add / Edit Score Form */}
             {(match.status === 'in_progress' || match.status === 'completed') && (
-              <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Add Player Score</h3>
+              <div id="score-form" className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">
+                    {editingScoreId ? 'Edit Player Score' : 'Add Player Score'}
+                  </h3>
+                  {editingScoreId && (
+                    <button
+                      onClick={resetScoreForm}
+                      className="text-sm text-gray-500 hover:text-gray-700 flex items-center"
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Cancel Edit
+                    </button>
+                  )}
+                </div>
+                {editingScoreId && (
+                  <p className="text-sm text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-3 py-2 mb-4">
+                    Re-entering scores will add a new record. To correct a score, enter the updated values and click Save.
+                  </p>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Team</label>
                     <select
                       value={newScore.teamId}
-                      onChange={(e) => setNewScore({ ...newScore, teamId: e.target.value })}
-                      className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      onChange={(e) => setNewScore({ ...newScore, teamId: e.target.value, playerId: '' })}
+                      disabled={!!editingScoreId}
+                      className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100"
                     >
                       <option value="">Select Team</option>
                       <option value={match.homeTeamId}>{homeTeam?.name}</option>
                       <option value={match.awayTeamId}>{awayTeam?.name}</option>
                     </select>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Player</label>
                     <select
                       value={newScore.playerId}
                       onChange={(e) => setNewScore({ ...newScore, playerId: e.target.value })}
-                      className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                      disabled={!newScore.teamId}
+                      disabled={!newScore.teamId || !!editingScoreId}
+                      className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100"
                     >
                       <option value="">Select Player</option>
                       {newScore.teamId === match.homeTeamId &&
@@ -362,7 +415,7 @@ export default function MatchDetailsPage() {
                         ))}
                     </select>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Game 1</label>
                     <input
@@ -374,7 +427,7 @@ export default function MatchDetailsPage() {
                       className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Game 2</label>
                     <input
@@ -386,7 +439,7 @@ export default function MatchDetailsPage() {
                       className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Game 3</label>
                     <input
@@ -398,15 +451,24 @@ export default function MatchDetailsPage() {
                       className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     />
                   </div>
-                  
+
                   <div className="flex items-end">
                     <button
                       onClick={addPlayerScore}
                       disabled={!newScore.playerId || !newScore.teamId}
                       className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
                     >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Score
+                      {editingScoreId ? (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Save Score
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Score
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -452,10 +514,21 @@ export default function MatchDetailsPage() {
                   {/* Player Scores */}
                   <div className="space-y-4">
                     {getTeamPlayerScores(match.homeTeamId).map((score) => (
-                      <div key={score.id} className="border border-gray-200 rounded-lg p-4">
+                      <div key={score.id} className={`border rounded-lg p-4 ${editingScoreId === score.id ? 'border-blue-400 bg-blue-50' : 'border-gray-200'}`}>
                         <div className="flex items-center justify-between mb-3">
                           <h4 className="font-medium text-gray-900">{getPlayerName(score.playerId)}</h4>
-                          <span className="text-lg font-bold text-blue-600">{score.finalScore}</span>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-lg font-bold text-blue-600">{score.finalScore}</span>
+                            {(match.status === 'in_progress' || match.status === 'completed') && (
+                              <button
+                                onClick={() => handleEditScore(score)}
+                                className="p-1 text-gray-400 hover:text-blue-600 rounded"
+                                title="Edit score"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
                         </div>
                         <div className="grid grid-cols-4 gap-2 text-sm">
                           <div className="text-center">
@@ -529,10 +602,21 @@ export default function MatchDetailsPage() {
                   {/* Player Scores */}
                   <div className="space-y-4">
                     {getTeamPlayerScores(match.awayTeamId).map((score) => (
-                      <div key={score.id} className="border border-gray-200 rounded-lg p-4">
+                      <div key={score.id} className={`border rounded-lg p-4 ${editingScoreId === score.id ? 'border-blue-400 bg-blue-50' : 'border-gray-200'}`}>
                         <div className="flex items-center justify-between mb-3">
                           <h4 className="font-medium text-gray-900">{getPlayerName(score.playerId)}</h4>
-                          <span className="text-lg font-bold text-green-600">{score.finalScore}</span>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-lg font-bold text-green-600">{score.finalScore}</span>
+                            {(match.status === 'in_progress' || match.status === 'completed') && (
+                              <button
+                                onClick={() => handleEditScore(score)}
+                                className="p-1 text-gray-400 hover:text-blue-600 rounded"
+                                title="Edit score"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
                         </div>
                         <div className="grid grid-cols-4 gap-2 text-sm">
                           <div className="text-center">
@@ -668,7 +752,7 @@ export default function MatchDetailsPage() {
                         <div className="text-sm text-gray-500 capitalize">{player.role}</div>
                       </div>
                       <div className="text-sm text-gray-500">
-                        Avg: {player.playerDetails.averageScore}
+
                       </div>
                     </div>
                   ))}
@@ -685,7 +769,7 @@ export default function MatchDetailsPage() {
                         <div className="text-sm text-gray-500 capitalize">{player.role}</div>
                       </div>
                       <div className="text-sm text-gray-500">
-                        Avg: {player.playerDetails.averageScore}
+
                       </div>
                     </div>
                   ))}

@@ -17,7 +17,8 @@ import {
   ChevronUp,
   ChevronDown
 } from 'lucide-react';
-import { tournamentApi, Tournament } from '../../../../lib/api';
+import { api, Tournament } from '../../../../lib/api';
+import Breadcrumb from '../../../components/Breadcrumb';
 
 interface PlayerStatistics {
   playerId: string;
@@ -62,9 +63,9 @@ export default function DetailedStatisticsPage() {
     try {
       setLoading(true);
       const [tournamentData, playerStatsData, teamStatsData] = await Promise.all([
-        tournamentApi.getById(tournamentId),
-        tournamentApi.getAllPlayerStatistics(tournamentId),
-        tournamentApi.getAllTeamStatistics(tournamentId)
+        api.tournaments.getById(tournamentId),
+        api.statistics.getAllPlayerStats(tournamentId),
+        api.statistics.getAllTeamStats(tournamentId)
       ]);
 
       setTournament(tournamentData);
@@ -525,6 +526,11 @@ export default function DetailedStatisticsPage() {
   return (
     <EnhancedProtectedRoute>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <Breadcrumb items={[
+        { label: 'Tournaments', href: '/tournaments' },
+        { label: tournament?.name || 'Tournament', href: `/tournaments/${tournamentId}` },
+        { label: 'Detailed Statistics' },
+      ]} />
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center">
