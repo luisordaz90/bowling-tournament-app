@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import ProtectedRoute from '../../../../components/ProtectedRoute';
 import { api, RoundRobinPreview, Tournament } from '../../../../../lib/api';
+import Breadcrumb from '../../../../components/Breadcrumb';
 
 interface SessionMatch {
   homeTeam: { id: string; name: string };
@@ -63,7 +64,7 @@ export default function SchedulePreviewPage() {
   const fetchPreview = async () => {
     try {
       setLoading(true);
-      const data = await api.tournaments.previewRoundRobin(tournamentId);
+      const data = await api.schedule.preview(tournamentId);
       setPreview(data);
       setError(null);
     } catch (err: any) {
@@ -82,7 +83,7 @@ export default function SchedulePreviewPage() {
 
     try {
       setGenerating(true);
-      await api.tournaments.generateRoundRobin(tournamentId, {
+      await api.schedule.generate(tournamentId, {
         startDate: new Date().toISOString(),
         daysBetweenSessions: 7,
         forceCreate: false
@@ -100,7 +101,7 @@ export default function SchedulePreviewPage() {
 
   if (loading) {
     return (
-      <EnhancedProtectedRoute requiredRoles={[UserRole.SUPER_ADMIN, UserRole.TOURNAMENT_DIRECTOR, UserRole.LEAGUE_MANAGER]}>
+      <EnhancedProtectedRoute requiredRoles={[UserRole.SUPER_ADMIN, UserRole.LEAGUE_ADMIN]}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-center min-h-64">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -112,7 +113,7 @@ export default function SchedulePreviewPage() {
 
   if (error) {
     return (
-      <EnhancedProtectedRoute requiredRoles={[UserRole.SUPER_ADMIN, UserRole.TOURNAMENT_DIRECTOR, UserRole.LEAGUE_MANAGER]}>
+      <EnhancedProtectedRoute requiredRoles={[UserRole.SUPER_ADMIN, UserRole.LEAGUE_ADMIN]}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-red-50 border border-red-200 rounded-md p-4">
             <div className="flex">
@@ -129,8 +130,13 @@ export default function SchedulePreviewPage() {
   }
 
   return (
-    <EnhancedProtectedRoute requiredRoles={[UserRole.SUPER_ADMIN, UserRole.TOURNAMENT_DIRECTOR, UserRole.LEAGUE_MANAGER]}>
+    <EnhancedProtectedRoute requiredRoles={[UserRole.SUPER_ADMIN, UserRole.LEAGUE_ADMIN]}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Breadcrumb items={[
+          { label: 'Tournaments', href: '/tournaments' },
+          { label: tournament?.name || 'Tournament', href: `/tournaments/${tournamentId}` },
+          { label: 'Schedule Preview' },
+        ]} />
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center mb-4">

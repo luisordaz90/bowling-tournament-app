@@ -24,6 +24,7 @@ import {
   SortDesc
 } from 'lucide-react';
 import ProtectedRoute from '../components/ProtectedRoute';
+import LeagueTournamentPicker from '../components/LeagueTournamentPicker';
 import { PermissionGate } from '@/components/rbac/PermissionGate';
 import { usePermissions } from '@/hooks/usePermissions';
 import { UserRole } from '@/lib/rbac';
@@ -46,27 +47,18 @@ export default function MatchesPage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   useEffect(() => {
-    fetchTournaments();
     fetchTeams();
   }, []);
 
-  useEffect(() => {
-    if (selectedTournament) {
-      fetchMatches(selectedTournament);
-      fetchScheduleSummary(selectedTournament);
-    }
-  }, [selectedTournament]);
-
-  const fetchTournaments = async () => {
-    try {
-      const data = await api.tournaments.getAll();
-      setTournaments(data);
-      if (data.length > 0) {
-        setSelectedTournament(data[0].id);
-      }
-    } catch (err) {
-      setError('Failed to fetch tournaments');
-      console.error('Error fetching tournaments:', err);
+  const handleSelectionChange = (selection: { leagueId: string; tournamentId: string } | null) => {
+    if (selection) {
+      setSelectedTournament(selection.tournamentId);
+      fetchMatches(selection.tournamentId);
+      fetchScheduleSummary(selection.tournamentId);
+    } else {
+      setSelectedTournament('');
+      setMatches([]);
+      setScheduleSummary(null);
     }
   };
 
@@ -82,7 +74,7 @@ export default function MatchesPage() {
   const fetchMatches = async (tournamentId: string) => {
     try {
       setLoading(true);
-      const data = await api.tournaments.getMatches(tournamentId);
+      const data = await api.matches.getAll(tournamentId);
       setMatches(data);
       setError(null);
     } catch (err) {
@@ -95,7 +87,7 @@ export default function MatchesPage() {
 
   const fetchScheduleSummary = async (tournamentId: string) => {
     try {
-      const data = await api.tournaments.getScheduleSummary(tournamentId);
+      const data = await api.schedule.getSummary(tournamentId);
       setScheduleSummary(data);
     } catch (err) {
       console.error('Error fetching schedule summary:', err);
@@ -118,7 +110,7 @@ export default function MatchesPage() {
     if (!selectedTournament) return;
     
     try {
-      const result = await api.tournaments.generateRoundRobin(selectedTournament, {
+      const result = await api.schedule.generate(selectedTournament, {
         startDate: new Date().toISOString(),
         daysBetweenSessions: 7,
         forceCreate: false
@@ -141,7 +133,7 @@ export default function MatchesPage() {
     }
     
     try {
-      const result = await api.tournaments.clearSchedule(selectedTournament);
+      const result = await api.schedule.clear(selectedTournament);
       alert(result.message);
       fetchMatches(selectedTournament);
       fetchScheduleSummary(selectedTournament);
@@ -444,7 +436,7 @@ export default function MatchesPage() {
                     </div>
 
                     <div className="flex items-center space-x-2">
-                      <PermissionGate roles={[UserRole.SUPER_ADMIN, UserRole.TOURNAMENT_DIRECTOR, UserRole.LEAGUE_MANAGER, UserRole.SCOREKEEPER]}>
+                      <PermissionGate roles={[UserRole.SUPER_ADMIN, UserRole.LEAGUE_ADMIN]}>
                         {match.status === 'scheduled' && (
                           <>
                             <button
@@ -672,27 +664,10 @@ export default function MatchesPage() {
           </div>
         </div>
 
-        {/* Tournament Selector */}
-        <div className="mt-6 bg-white p-6 rounded-lg shadow">
-          <div className="flex items-center space-x-4">
-            <label htmlFor="tournament" className="block text-sm font-medium text-gray-700">
-              Select Tournament:
-            </label>
-            <select
-              id="tournament"
-              value={selectedTournament}
-              onChange={(e) => setSelectedTournament(e.target.value)}
-              className="block w-full max-w-xs border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            >
-              <option value="">Select a tournament</option>
-              {tournaments.map((tournament) => (
-                <option key={tournament.id} value={tournament.id}>
-                  {tournament.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+        <LeagueTournamentPicker
+          onSelectionChange={handleSelectionChange}
+          className="mt-6"
+        />
 
         {error && (
           <div className="mt-4 bg-red-50 border border-red-200 rounded-md p-4">
@@ -728,7 +703,7 @@ export default function MatchesPage() {
                     <BarChart3 className="h-4 w-4 inline mr-2" />
                     Schedule Overview
                   </button>
-                  <PermissionGate roles={[UserRole.SUPER_ADMIN, UserRole.TOURNAMENT_DIRECTOR, UserRole.LEAGUE_MANAGER]}>
+                  <PermissionGate roles={[UserRole.SUPER_ADMIN, UserRole.LEAGUE_ADMIN]}>
                     <button
                       onClick={() => setActiveTab('generate')}
                       className={`py-2 px-1 border-b-2 font-medium text-sm ${

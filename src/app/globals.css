@@ -62,21 +62,25 @@ body {
 } */
 
 /* Component layer for reusable classes */
-/* @layer components {
+@layer components {
   .btn {
-    @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+    @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
   }
 
   .btn-primary {
-    @apply bg-blue-600 text-white hover:bg-blue-700 px-4 py-2;
+    @apply inline-flex items-center justify-center rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 transition-colors disabled:opacity-50 disabled:pointer-events-none;
   }
 
   .btn-secondary {
-    @apply bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 px-4 py-2;
+    @apply inline-flex items-center justify-center rounded-md text-sm font-medium bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 px-4 py-2 transition-colors disabled:opacity-50 disabled:pointer-events-none;
   }
 
   .btn-danger {
-    @apply bg-red-600 text-white hover:bg-red-700 px-4 py-2;
+    @apply inline-flex items-center justify-center rounded-md text-sm font-medium bg-red-600 text-white hover:bg-red-700 px-4 py-2 transition-colors disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 px-4 py-2 transition-colors disabled:opacity-50 disabled:pointer-events-none;
   }
 
   .card {
@@ -128,7 +132,7 @@ body {
   }
 
   .form-input {
-    @apply block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6;
+    @apply block w-full rounded-md border border-gray-300 py-1.5 px-3 text-gray-900 shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-600 sm:text-sm;
   }
 
   .form-error {
@@ -140,9 +144,9 @@ body {
   }
 
   .loading-overlay {
-    @apply fixed inset-0 bg-black bg-opacity-25 flex items-center justify-center z-50;
+    @apply fixed inset-0 bg-black/25 flex items-center justify-center z-50;
   }
-} */
+}
 
 /* Utility layer for custom utilities */
 @layer utilities {

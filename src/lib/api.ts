@@ -1,8 +1,19 @@
-// lib/api.ts - Updated API library with new bowling service endpoints
+// lib/api.ts
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000/api';
 
-// Enhanced interfaces based on the updated service
+// ── Interfaces ────────────────────────────────────────────────────────────────
+
+export interface League {
+  id: string;
+  name: string;
+  description?: string;
+  leagueType?: string;
+  status: 'active' | 'inactive' | 'archived';
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Tournament {
   id: string;
   name: string;
@@ -35,10 +46,8 @@ export interface Player {
   name: string;
   email?: string;
   phone?: string;
-  handicap: number;
-  averageScore: number;
-  totalGamesPlayed: number;
-  totalPins: number;
+  status?: string;
+  auth0UserId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -112,6 +121,56 @@ export interface TournamentStanding {
   rank: number;
 }
 
+export interface PlayerDashboard {
+  player: Player;
+  currentTeams: Array<{
+    id: string;
+    name: string;
+    captainName: string;
+    tournamentName: string;
+    tournamentId: string;
+    tournamentStatus: string;
+    role: string;
+    joinedDate: string;
+  }>;
+  overallStatistics: {
+    tournamentsPlayed: string;
+    totalGames: string;
+    totalPins: string;
+    overallAverage: string;
+    careerHighGame: string;
+    careerHighSeries: string;
+    totalMatches: string;
+  };
+  recentTournamentStats: Array<{
+    tournamentId: string;
+    tournamentName: string;
+    tournamentStatus: string;
+    gamesPlayed: number;
+    totalPins: number;
+    currentAverage: number;
+    highestGame: number;
+    highestSeries: number;
+    matchesPlayed: number;
+  }>;
+  recentScores: Array<{
+    id: string;
+    matchId: string;
+    playerId: string;
+    teamId: string;
+    game1Score: number;
+    game2Score: number;
+    game3Score: number;
+    totalScore: number;
+    finalScore: number;
+    handicapApplied: number;
+    matchDate: string;
+    homeTeamName: string;
+    awayTeamName: string;
+    tournamentName: string;
+  }>;
+}
+
 export interface ScheduleSummary {
   tournamentId: string;
   totalTeams: number;
@@ -160,20 +219,54 @@ export interface RoundRobinPreview {
   isValidSchedule: boolean;
 }
 
-// API utility class
+// ── API Client ────────────────────────────────────────────────────────────────
+
 class ApiClient {
+  private tokenCache: { token: string; expires: number } | null = null;
+
+  private async getAccessToken(): Promise<string | null> {
+    if (typeof window === 'undefined') return null;
+
+    const now = Date.now();
+    if (this.tokenCache && this.tokenCache.expires > now) {
+      return this.tokenCache.token;
+    }
+
+    try {
+      const res = await fetch('/api/auth/token');
+      if (!res.ok) return null;
+      const { accessToken } = await res.json();
+      if (!accessToken) return null;
+      // Cache for 50 minutes (tokens expire in 60 min)
+      this.tokenCache = { token: accessToken, expires: now + 50 * 60 * 1000 };
+      return accessToken;
+    } catch {
+      return null;
+    }
+  }
+
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    console.log("ENTRO AQUI");
     const url = `${API_BASE}${endpoint}`;
-    const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      ...options,
-    });
-    console.log(response);
+    const token = await this.getAccessToken();
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(options.headers as Record<string, string>),
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(url, { ...options, headers });
+
     if (!response.ok) {
+      if (response.status === 401 && typeof window !== 'undefined') {
+        // Token expired or invalid — clear cache and redirect to login
+        this.tokenCache = null;
+        window.location.href = '/auth/login';
+        return new Promise(() => {}); // never resolves — page is redirecting
+      }
       const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
       throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
     }
@@ -181,166 +274,141 @@ class ApiClient {
     return response.json();
   }
 
-  // Tournament API
+  // ── Leagues ─────────────────────────────────────────────────────────────
+
+  leagues = {
+    getAll: () =>
+      this.request<League[]>('/leagues'),
+
+    getById: (id: string) =>
+      this.request<League>(`/leagues/${id}`),
+  };
+
+  // ── Tournaments (CRUD only) ──────────────────────────────────────────────
+
   tournaments = {
-    getAll: () => this.request<Tournament[]>('/tournaments'),
-    
-    getById: (id: string) => this.request<Tournament>(`/tournaments/${id}`),
-    
-    create: (data: Partial<Tournament>) => 
+    getAll: (leagueId?: string) =>
+      this.request<Tournament[]>(leagueId ? `/tournaments?leagueId=${leagueId}` : '/tournaments'),
+
+    getById: (id: string) =>
+      this.request<Tournament>(`/tournaments/${id}`),
+
+    create: (data: Partial<Tournament>) =>
       this.request<Tournament>('/tournaments', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
-    
+
     update: (id: string, data: Partial<Tournament>) =>
       this.request<Tournament>(`/tournaments/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
-    
+
     delete: (id: string) =>
       this.request<void>(`/tournaments/${id}`, { method: 'DELETE' }),
-
-    // Team registration
-    registerTeam: (tournamentId: string, data: { teamId: string; seedNumber?: number }) =>
-      this.request<any>(`/tournaments/${tournamentId}/teams`, {
-        method: 'POST',
-        body: JSON.stringify(data),
-      }),
-
-    getRegisteredTeams: (tournamentId: string) =>
-      this.request<any[]>(`/tournaments/${tournamentId}/teams`),
-
-    // Player registration to teams
-    registerPlayer: (tournamentId: string, teamId: string, data: { playerId: string; role?: string }) =>
-      this.request<any>(`/tournaments/${tournamentId}/teams/${teamId}/players`, {
-        method: 'POST',
-        body: JSON.stringify(data),
-      }),
-
-    getTeamPlayers: (tournamentId: string, teamId: string) =>
-      this.request<any[]>(`/tournaments/${tournamentId}/teams/${teamId}/players`),
-
-    // Sessions
-    createSession: (tournamentId: string, data: Partial<LeagueSession>) =>
-      this.request<LeagueSession>(`/tournaments/${tournamentId}/sessions`, {
-        method: 'POST',
-        body: JSON.stringify(data),
-      }),
-
-    getSessions: (tournamentId: string) =>
-      this.request<LeagueSession[]>(`/tournaments/${tournamentId}/sessions`),
-
-    // Matches
-    getMatches: (tournamentId: string) =>
-      this.request<Match[]>(`/tournaments/${tournamentId}/matches`),
-
-    createMatch: (tournamentId: string, data: Partial<Match>) =>
-      this.request<Match>(`/tournaments/${tournamentId}/matches`, {
-        method: 'POST',
-        body: JSON.stringify(data),
-      }),
-
-    // Schedule management
-    getScheduleSummary: (tournamentId: string) =>
-      this.request<ScheduleSummary>(`/tournaments/${tournamentId}/schedule/summary`),
-
-    previewRoundRobin: (tournamentId: string) =>
-      this.request<RoundRobinPreview>(`/tournaments/${tournamentId}/schedule/round-robin/preview`),
-
-    generateRoundRobin: (tournamentId: string, options: {
-      startDate?: string;
-      daysBetweenSessions?: number;
-      overrideTeamOrder?: string[];
-      forceCreate?: boolean;
-      sessionTimeSlots?: Array<{ hour?: number; minute?: number }>;
-    }) =>
-      this.request<any>(`/tournaments/${tournamentId}/schedule/round-robin`, {
-        method: 'POST',
-        body: JSON.stringify(options),
-      }),
-
-    clearSchedule: (tournamentId: string) =>
-      this.request<{ message: string }>(`/tournaments/${tournamentId}/schedule`, {
-        method: 'DELETE',
-      }),
-
-    validateSchedule: (tournamentId: string) =>
-      this.request<any>(`/tournaments/${tournamentId}/schedule/validate`),
-
-    getSessionMatches: (tournamentId: string, sessionNumber: number) =>
-      this.request<any>(`/tournaments/${tournamentId}/sessions/${sessionNumber}/matches`),
-
-    // Statistics
-    getStandings: (tournamentId: string) =>
-      this.request<TournamentStanding[]>(`/tournaments/${tournamentId}/standings`),
-
-    getStatistics: (tournamentId: string) =>
-      this.request<any>(`/tournaments/${tournamentId}/statistics`),
-
-    getPlayerStatistics: (tournamentId: string, playerId: string) =>
-      this.request<any>(`/tournaments/${tournamentId}/players/${playerId}/statistics`),
-
-    getTeamStatistics: (tournamentId: string, teamId: string) =>
-      this.request<any>(`/tournaments/${tournamentId}/teams/${teamId}/statistics`),
-
-    getAllPlayerStatistics: (tournamentId: string) =>
-      this.request<any[]>(`/tournaments/${tournamentId}/player-statistics`),
-
-    getAllTeamStatistics: (tournamentId: string) =>
-      this.request<any[]>(`/tournaments/${tournamentId}/team-statistics`),
   };
 
-  // Teams API
+  // ── Teams (CRUD + tournament roster ops) ────────────────────────────────
+
   teams = {
-    getAll: () => this.request<Team[]>('/teams'),
-    
-    getById: (id: string) => this.request<Team>(`/teams/${id}`),
-    
+    getAll: () =>
+      this.request<Team[]>('/teams'),
+
+    getById: (id: string) =>
+      this.request<Team>(`/teams/${id}`),
+
     create: (data: Partial<Team>) =>
       this.request<Team>('/teams', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
-    
+
     update: (id: string, data: Partial<Team>) =>
       this.request<Team>(`/teams/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
-    
+
     delete: (id: string) =>
       this.request<void>(`/teams/${id}`, { method: 'DELETE' }),
+
+    /** @deprecated Use api.registrations.registerTeam() */
+    registerInTournament: (tournamentId: string, data: { teamId: string; seedNumber?: number }) =>
+      this.registrations.registerTeam({ tournamentId, ...data }),
+
+    /** @deprecated Use api.registrations.unregisterTeam() */
+    removeFromTournament: (tournamentId: string, teamId: string) =>
+      this.registrations.unregisterTeam(teamId, tournamentId),
+
+    /** @deprecated Use api.registrations.getTeams() */
+    getTournamentTeams: (tournamentId: string) =>
+      this.registrations.getTeams(tournamentId),
+
+    /** @deprecated Use api.registrations.registerPlayer() */
+    addPlayer: (tournamentId: string, teamId: string, data: { playerId: string; role?: string }) =>
+      this.registrations.registerPlayer({ tournamentId, teamId, ...data }),
+
+    /** @deprecated Use api.registrations.removePlayer() */
+    removePlayer: (tournamentId: string, teamId: string, playerId: string) =>
+      this.registrations.removePlayer(playerId, tournamentId, teamId),
+
+    /** @deprecated Use api.registrations.getPlayers() */
+    getPlayers: (tournamentId: string, teamId: string) =>
+      this.registrations.getPlayers(tournamentId, teamId),
   };
 
-  // Players API
+  // ── Players (CRUD + dashboard) ───────────────────────────────────────────
+
   players = {
-    getAll: () => this.request<Player[]>('/players'),
-    
-    getById: (id: string) => this.request<Player>(`/players/${id}`),
-    
+    getAll: () =>
+      this.request<Player[]>('/players'),
+
+    getById: (id: string) =>
+      this.request<Player>(`/players/${id}`),
+
+    /** @deprecated Use api.me.getDashboard() */
+    getDashboard: (id: string) =>
+      this.request<PlayerDashboard>(`/players/${id}/dashboard`),
+
     create: (data: Partial<Player>) =>
       this.request<Player>('/players', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
-    
+
+    update: (id: string, data: Partial<Player>) =>
+      this.request<Player>(`/players/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+
     delete: (id: string) =>
       this.request<void>(`/players/${id}`, { method: 'DELETE' }),
   };
 
-  // Matches API
+  // ── Matches (CRUD + status + scoring) ───────────────────────────────────
+
   matches = {
-    getById: (id: string) => this.request<Match>(`/matches/${id}`),
-    
+    /** Get all matches for a tournament. */
+    getAll: (tournamentId: string) =>
+      this.request<Match[]>(`/tournaments/${tournamentId}/matches`),
+
+    getById: (id: string) =>
+      this.request<Match>(`/matches/${id}`),
+
+    create: (tournamentId: string, data: Partial<Match>) =>
+      this.request<Match>(`/tournaments/${tournamentId}/matches`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
     updateStatus: (id: string, status: string) =>
       this.request<Match>(`/matches/${id}/status`, {
         method: 'PUT',
         body: JSON.stringify({ status }),
       }),
 
-    // Player scores
     addPlayerScore: (matchId: string, data: {
       teamId: string;
       playerId: string;
@@ -357,7 +425,6 @@ class ApiClient {
     getPlayerScores: (matchId: string) =>
       this.request<PlayerMatchScore[]>(`/matches/${matchId}/player-scores`),
 
-    // Team scores
     calculateTeamScore: (matchId: string, teamId: string) =>
       this.request<TeamMatchScore>(`/matches/${matchId}/team-scores`, {
         method: 'POST',
@@ -368,44 +435,185 @@ class ApiClient {
       this.request<TeamMatchScore[]>(`/matches/${matchId}/team-scores`),
   };
 
-  // Sessions API
+  // ── Sessions (CRUD + status + session matches) ───────────────────────────
+
   sessions = {
+    /** List sessions for a tournament. */
+    getAll: (tournamentId: string) =>
+      this.request<LeagueSession[]>(`/tournaments/${tournamentId}/sessions`),
+
+    /** Create a session within a tournament. */
+    create: (tournamentId: string, data: Partial<LeagueSession>) =>
+      this.request<LeagueSession>(`/tournaments/${tournamentId}/sessions`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
     updateStatus: (id: string, status: string) =>
       this.request<LeagueSession>(`/sessions/${id}/status`, {
         method: 'PUT',
         body: JSON.stringify({ status }),
       }),
+
+    /** Get matches for a specific session number within a tournament. */
+    getMatches: (tournamentId: string, sessionNumber: number) =>
+      this.request<any>(`/tournaments/${tournamentId}/sessions/${sessionNumber}/matches`),
+
+    /** Submit scores for a player in a session (captain or admin). */
+    submitScore: (tournamentId: string, sessionNumber: number, data: {
+      playerId: string;
+      teamId: string;
+      scores: number[];
+    }) =>
+      this.request<any>(`/tournaments/${tournamentId}/sessions/${sessionNumber}/scores`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    /** Get all scores for a session. */
+    getScores: (tournamentId: string, sessionNumber: number) =>
+      this.request<any[]>(`/tournaments/${tournamentId}/sessions/${sessionNumber}/scores`),
+
+    /** Update scores for a player in a session. */
+    updateScore: (tournamentId: string, sessionNumber: number, playerId: string, data: {
+      teamId: string;
+      scores: number[];
+    }) =>
+      this.request<any>(`/tournaments/${tournamentId}/sessions/${sessionNumber}/scores/${playerId}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+
+    /** Delete scores for a player in a session. */
+    deleteScore: (tournamentId: string, sessionNumber: number, playerId: string, teamId: string) =>
+      this.request<any>(`/tournaments/${tournamentId}/sessions/${sessionNumber}/scores/${playerId}`, {
+        method: 'DELETE',
+        body: JSON.stringify({ teamId }),
+      }),
   };
 
-  // Statistics API
-  playerStatistics = {
-    update: (playerId: string, tournamentId: string, data: any) =>
+  // ── Schedule ─────────────────────────────────────────────────────────────
+
+  schedule = {
+    getSummary: (tournamentId: string) =>
+      this.request<ScheduleSummary>(`/tournaments/${tournamentId}/schedule/summary`),
+
+    preview: (tournamentId: string) =>
+      this.request<RoundRobinPreview>(`/tournaments/${tournamentId}/schedule/round-robin/preview`),
+
+    generate: (tournamentId: string, options: {
+      startDate?: string;
+      daysBetweenSessions?: number;
+      overrideTeamOrder?: string[];
+      forceCreate?: boolean;
+      sessionTimeSlots?: Array<{ hour?: number; minute?: number }>;
+    }) =>
+      this.request<any>(`/tournaments/${tournamentId}/schedule/round-robin`, {
+        method: 'POST',
+        body: JSON.stringify(options),
+      }),
+
+    validate: (tournamentId: string) =>
+      this.request<any>(`/tournaments/${tournamentId}/schedule/validate`),
+
+    clear: (tournamentId: string) =>
+      this.request<{ message: string }>(`/tournaments/${tournamentId}/schedule`, {
+        method: 'DELETE',
+      }),
+  };
+
+  // ── Statistics ───────────────────────────────────────────────────────────
+
+  statistics = {
+    getStandings: (tournamentId: string) =>
+      this.request<TournamentStanding[]>(`/tournaments/${tournamentId}/standings`),
+
+    getTournamentStats: (tournamentId: string) =>
+      this.request<any>(`/tournaments/${tournamentId}/statistics`),
+
+    getPlayerStats: (tournamentId: string, playerId: string) =>
+      this.request<any>(`/tournaments/${tournamentId}/players/${playerId}/statistics`),
+
+    getTeamStats: (tournamentId: string, teamId: string) =>
+      this.request<any>(`/tournaments/${tournamentId}/teams/${teamId}/statistics`),
+
+    getAllPlayerStats: (tournamentId: string) =>
+      this.request<any[]>(`/tournaments/${tournamentId}/player-statistics`),
+
+    getAllTeamStats: (tournamentId: string) =>
+      this.request<any[]>(`/tournaments/${tournamentId}/team-statistics`),
+
+    updatePlayerStats: (playerId: string, tournamentId: string, data: any) =>
       this.request<any>(`/player-statistics/${playerId}/${tournamentId}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
-  };
 
-  teamStatistics = {
-    update: (teamId: string, tournamentId: string, data: any) =>
+    updateTeamStats: (teamId: string, tournamentId: string, data: any) =>
       this.request<any>(`/team-statistics/${teamId}/${tournamentId}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
   };
 
-  // Health check
+  // ── Me (current user) ──────────────────────────────────────────────────
+
+  me = {
+    getTeams: () =>
+      this.request<any[]>('/me/teams'),
+
+    getLeagues: () =>
+      this.request<any[]>('/me/leagues'),
+
+    getDashboard: () =>
+      this.request<PlayerDashboard>('/me/dashboard'),
+
+    getStatistics: () =>
+      this.request<any[]>('/me/statistics'),
+
+    getLeagueHistory: () =>
+      this.request<any[]>('/me/league-history'),
+  };
+
+  // ── Registrations (flat team/player enrollment) ───────────────────────
+
+  registrations = {
+    registerTeam: (data: { tournamentId: string; teamId: string; seedNumber?: number }) =>
+      this.request<any>('/registrations/teams', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    getTeams: (tournamentId: string) =>
+      this.request<any[]>(`/registrations/teams?tournamentId=${tournamentId}`),
+
+    unregisterTeam: (teamId: string, tournamentId: string) =>
+      this.request<void>(`/registrations/teams/${teamId}?tournamentId=${tournamentId}`, {
+        method: 'DELETE',
+      }),
+
+    registerPlayer: (data: { tournamentId: string; teamId: string; playerId: string; role?: string }) =>
+      this.request<any>('/registrations/players', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    getPlayers: (tournamentId: string, teamId: string) =>
+      this.request<any[]>(`/registrations/players?tournamentId=${tournamentId}&teamId=${teamId}`),
+
+    removePlayer: (playerId: string, tournamentId: string, teamId: string) =>
+      this.request<{ message: string }>(
+        `/registrations/players/${playerId}?tournamentId=${tournamentId}&teamId=${teamId}`,
+        { method: 'DELETE' }
+      ),
+  };
+
+  // ── Health ───────────────────────────────────────────────────────────────
+
   health = {
-    check: () => this.request<{ status: string; timestamp: string; message: string }>('/health'),
+    check: () =>
+      this.request<{ status: string; timestamp: string; message: string }>('/health'),
   };
 }
 
 export const api = new ApiClient();
-
-// Legacy exports for backward compatibility
-export const tournamentApi = api.tournaments;
-export const teamApi = api.teams;
-export const playerApi = api.players;
-export const matchApi = api.matches;
-export const playerStatisticsApi = api.playerStatistics;
-export const teamStatisticsApi = api.teamStatistics;

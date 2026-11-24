@@ -1,0 +1,120 @@
+{
+  "nav": {
+    "tournaments": "Torneos",
+    "teams": "Equipos",
+    "players": "Jugadores",
+    "matches": "Partidos",
+    "statistics": "Estadisticas",
+    "signOut": "Cerrar Sesion",
+    "signIn": "Iniciar Sesion",
+    "welcome": "Bienvenido/a, {name}"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "error": "Ocurrio un error",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "search": "Buscar",
+    "noResults": "No se encontraron resultados",
+    "confirm": "Estas seguro/a?",
+    "confirmDelete": "Estas seguro/a de que deseas eliminar esto? Esta accion no se puede deshacer.",
+    "back": "Volver",
+    "actions": "Acciones",
+    "status": "Estado",
+    "name": "Nombre",
+    "email": "Correo electronico",
+    "phone": "Telefono",
+    "viewDetails": "Ver Detalles",
+    "registered": "Registrado",
+    "progress": "Progreso",
+    "sessions": "sesiones",
+    "maxTeams": "Max {count} equipos",
+    "new": "Nuevo",
+    "getStarted": "Comienza creando uno nuevo.",
+    "failedToFetch": "Error al obtener datos",
+    "failedToCreate": "Error al crear",
+    "failedToDelete": "Error al eliminar",
+    "average": "Promedio",
+    "games": "Juegos",
+    "totalPins": "Pinos Totales",
+    "na": "N/D",
+    "teamName": "Nombre del Equipo"
+  },
+  "tournaments": {
+    "title": "Torneos",
+    "subtitle": "Administra tus torneos de boliche",
+    "create": "Nuevo Torneo",
+    "noTournaments": "No hay torneos",
+    "noTournamentsHint": "Comienza creando un nuevo torneo.",
+    "startDate": "Fecha de Inicio",
+    "endDate": "Fecha de Fin",
+    "maxTeams": "Maximo de Equipos",
+    "totalSessions": "Total de Sesiones",
+    "sessionType": "Tipo de Sesion",
+    "confirmDelete": "Estas seguro/a de que deseas eliminar este torneo? Esta accion no se puede deshacer.",
+    "status": {
+      "draft": "Borrador",
+      "active": "Activo",
+      "completed": "Completado",
+      "cancelled": "Cancelado"
+    }
+  },
+  "teams": {
+    "title": "Equipos",
+    "subtitle": "Administra tus equipos de boliche",
+    "create": "Nuevo Equipo",
+    "createTitle": "Crear Nuevo Equipo",
+    "noTeams": "No hay equipos",
+    "noTeamsHint": "Comienza creando un nuevo equipo.",
+    "captainName": "Nombre del Capitan",
+    "captainEmail": "Correo del Capitan",
+    "captainPhone": "Telefono del Capitan",
+    "teamNamePlaceholder": "Nombre del equipo",
+    "captainNamePlaceholder": "Nombre completo del capitan",
+    "captainEmailPlaceholder": "capitan@ejemplo.com",
+    "captainPhonePlaceholder": "(555) 123-4567",
+    "confirmDelete": "Estas seguro/a de que deseas eliminar este equipo?",
+    "roster": "Plantilla",
+    "addToTournament": "Agregar a Torneo",
+    "removeFromTournament": "Quitar del Torneo"
+  },
+  "players": {
+    "title": "Jugadores",
+    "subtitle": "Administra los jugadores de boliche y sus estadisticas",
+    "create": "Nuevo Jugador",
+    "createTitle": "Crear Nuevo Jugador",
+    "noPlayers": "No hay jugadores",
+    "noPlayersHint": "Comienza agregando un nuevo jugador.",
+    "playerName": "Nombre del Jugador",
+    "playerNamePlaceholder": "Nombre completo del jugador",
+    "emailPlaceholder": "jugador@ejemplo.com",
+    "phonePlaceholder": "(555) 123-4567",
+    "handicap": "Handicap",
+    "averageScore": "Promedio",
+    "gamesPlayed": "Juegos Jugados",
+    "confirmDelete": "Estas seguro/a de que deseas eliminar este jugador?",
+    "status": {
+      "invited": "Invitado",
+      "active": "Activo"
+    }
+  },
+  "roster": {
+    "addPlayer": "Agregar Jugador",
+    "removePlayer": "Quitar Jugador",
+    "role": "Rol",
+    "roles": {
+      "captain": "Capitan",
+      "regular": "Regular",
+      "substitute": "Suplente"
+    }
+  },
+  "dashboard": {
+    "title": "Panel",
+    "recentScores": "Puntajes Recientes",
+    "currentTeams": "Equipos Actuales",
+    "overallStats": "Estadisticas Generales"
+  }
+}

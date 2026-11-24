@@ -3,10 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3001 --turbopack ",
+    "dev": "NODE_OPTIONS='--localstorage-file=/tmp/bowling-app.ls' next dev -p 3001 --turbopack",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "start": "next start -p 3001",
+    "lint": "next lint",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug"
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^4.6.1",
@@ -15,20 +19,22 @@
     "date-fns": "^4.1.0",
     "lucide-react": "^0.513.0",
     "next": "15.3.3",
+    "next-intl": "^4.14.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
-    "@tailwindcss/postcss": "^4.1.8",
-    "postcss": "^8.5.4",
+    "@playwright/test": "^1.65.0",
     "@tailwindcss/forms": "0.3.4",
-    "autoprefixer": "^10.4.21",
+    "@tailwindcss/postcss": "^4.1.8",
     "@types/node": "^20.19.0",
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.6",
+    "autoprefixer": "^10.4.21",
     "eslint": "^9.28.0",
     "eslint-config-next": "15.3.3",
+    "postcss": "^8.5.4",
     "tailwindcss": "^4",
     "typescript": "^5.8.3"
   }

@@ -5,10 +5,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save } from 'lucide-react';
-import ProtectedRoute from '../../components/ProtectedRoute';
+//import ProtectedRoute from '../../components/ProtectedRoute';
 import { EnhancedProtectedRoute } from '@/components/rbac/EnhancedProtectedRoute';
 import { UserRole } from '@/lib/rbac';
-import { tournamentApi } from '../../../lib/api';
+import { api } from '../../../lib/api';
 
 export default function NewTournamentPage() {
   const router = useRouter();
@@ -28,7 +28,7 @@ export default function NewTournamentPage() {
     setLoading(true);
 
     try {
-      const response = await tournamentApi.create({
+      const response = await api.tournaments.create({
         ...formData,
         maxTeams: parseInt(formData.maxTeams),
         totalSessions: parseInt(formData.totalSessions),
@@ -51,7 +51,7 @@ export default function NewTournamentPage() {
   };
 
   return (
-    <EnhancedProtectedRoute requiredRoles={[UserRole.SUPER_ADMIN, UserRole.TOURNAMENT_DIRECTOR]}>
+    <EnhancedProtectedRoute requiredRoles={[UserRole.SUPER_ADMIN, UserRole.LEAGUE_ADMIN]}>
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <Link

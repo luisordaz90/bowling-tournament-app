@@ -20,7 +20,8 @@ import {
   Eye,
   BarChart3
 } from 'lucide-react';
-import { tournamentApi, api, Tournament, LeagueSession as Session, Match } from '../../../../lib/api';
+import { api, Tournament, LeagueSession as Session, Match } from '../../../../lib/api';
+import Breadcrumb from '../../../components/Breadcrumb';
 
 export default function SessionsPage() {
   const params = useParams();
@@ -49,9 +50,9 @@ export default function SessionsPage() {
     try {
       setLoading(true);
       const [tournamentData, sessionsData, matchesData] = await Promise.all([
-        tournamentApi.getById(tournamentId),
-        tournamentApi.getSessions(tournamentId),
-        tournamentApi.getMatches(tournamentId)
+        api.tournaments.getById(tournamentId),
+        api.sessions.getAll(tournamentId),
+        api.matches.getAll(tournamentId)
       ]);
 
       setTournament(tournamentData);
@@ -75,7 +76,7 @@ export default function SessionsPage() {
     }
 
     try {
-      await tournamentApi.createSession(tournamentId, {
+      await api.sessions.create(tournamentId, {
         sessionNumber: parseInt(newSession.sessionNumber),
         sessionDate: newSession.sessionDate,
         status: newSession.status
@@ -163,8 +164,13 @@ export default function SessionsPage() {
   }
 
   return (
-    <EnhancedProtectedRoute requiredRoles={[UserRole.SUPER_ADMIN, UserRole.TOURNAMENT_DIRECTOR, UserRole.LEAGUE_MANAGER]}>
+    <EnhancedProtectedRoute requiredRoles={[UserRole.SUPER_ADMIN, UserRole.LEAGUE_ADMIN]}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <Breadcrumb items={[
+        { label: 'Tournaments', href: '/tournaments' },
+        { label: tournament?.name || 'Tournament', href: `/tournaments/${tournamentId}` },
+        { label: 'Sessions' },
+      ]} />
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between">

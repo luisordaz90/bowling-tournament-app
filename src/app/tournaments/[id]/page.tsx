@@ -4,9 +4,10 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Trophy, Users, Calendar, BarChart3, ArrowLeft, Plus, Target, Settings, Eye, FileText } from 'lucide-react';
+import { Trophy, Users, Calendar, BarChart3, ArrowLeft, Plus, Target, Settings, Eye, X, ChevronDown, ChevronUp } from 'lucide-react';
 import ProtectedRoute from '../../components/ProtectedRoute';
-import { tournamentApi, Tournament } from '../../../lib/api';
+import Breadcrumb from '../../components/Breadcrumb';
+import { api, Tournament, Player } from '../../../lib/api';
 
 export default function TournamentDetailPage() {
   const params = useParams();
@@ -17,7 +18,18 @@ export default function TournamentDetailPage() {
   const [statistics, setStatistics] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'standings' | 'statistics'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'standings' | 'statistics' | 'rosters'>('overview');
+
+  // Roster state
+  const [registeredTeams, setRegisteredTeams] = useState<any[]>([]);
+  const [teamRosters, setTeamRosters] = useState<Record<string, any[]>>({});
+  const [allPlayers, setAllPlayers] = useState<Player[]>([]);
+  const [expandedTeam, setExpandedTeam] = useState<string | null>(null);
+  const [addingPlayerTo, setAddingPlayerTo] = useState<string | null>(null);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string>('');
+  const [selectedRole, setSelectedRole] = useState<string>('regular');
+  const [rosterMessage, setRosterMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [rostersLoaded, setRostersLoaded] = useState(false);
 
   useEffect(() => {
     fetchTournamentData();
@@ -27,9 +39,9 @@ export default function TournamentDetailPage() {
     try {
       setLoading(true);
       const [tournamentResponse, standingsResponse, statisticsResponse] = await Promise.all([
-        tournamentApi.getById(tournamentId),
-        tournamentApi.getStandings(tournamentId),
-        tournamentApi.getStatistics(tournamentId),
+        api.tournaments.getById(tournamentId),
+        api.statistics.getStandings(tournamentId),
+        api.statistics.getTournamentStats(tournamentId),
       ]);
       
       setTournament(tournamentResponse);
@@ -42,6 +54,71 @@ export default function TournamentDetailPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchRosterData = async () => {
+    if (rostersLoaded) return;
+    try {
+      const [teams, players] = await Promise.all([
+        api.registrations.getTeams(tournamentId),
+        api.players.getAll(),
+      ]);
+      setRegisteredTeams(teams);
+      setAllPlayers(players);
+
+      const rosters: Record<string, any[]> = {};
+      await Promise.all(
+        teams.map(async (reg: any) => {
+          try {
+            const teamPlayers = await api.registrations.getPlayers(tournamentId, reg.teamId);
+            rosters[reg.teamId] = teamPlayers;
+          } catch {
+            rosters[reg.teamId] = [];
+          }
+        })
+      );
+      setTeamRosters(rosters);
+      setRostersLoaded(true);
+    } catch (err) {
+      console.error('Error loading roster data:', err);
+    }
+  };
+
+  const handleAddPlayer = async (teamId: string) => {
+    if (!selectedPlayerId) return;
+    try {
+      await api.registrations.registerPlayer({
+        tournamentId,
+        teamId,
+        playerId: selectedPlayerId,
+        role: selectedRole,
+      });
+      const updated = await api.registrations.getPlayers(tournamentId, teamId);
+      setTeamRosters(prev => ({ ...prev, [teamId]: updated }));
+      setAddingPlayerTo(null);
+      setSelectedPlayerId('');
+      setSelectedRole('regular');
+      setRosterMessage({ type: 'success', text: 'Player added to roster.' });
+    } catch (err: any) {
+      setRosterMessage({ type: 'error', text: err.message || 'Failed to add player.' });
+    }
+  };
+
+  const handleRemovePlayer = async (teamId: string, playerId: string) => {
+    if (!confirm('Remove this player from the roster?')) return;
+    try {
+      await api.registrations.removePlayer(playerId, tournamentId, teamId);
+      const updated = await api.registrations.getPlayers(tournamentId, teamId);
+      setTeamRosters(prev => ({ ...prev, [teamId]: updated }));
+      setRosterMessage({ type: 'success', text: 'Player removed from roster.' });
+    } catch (err: any) {
+      setRosterMessage({ type: 'error', text: err.message || 'Failed to remove player.' });
+    }
+  };
+
+  const getAvailablePlayers = (teamId: string) => {
+    const rostered = (teamRosters[teamId] || []).map((p: any) => p.playerId);
+    return allPlayers.filter(p => !rostered.includes(p.id));
   };
 
   const getStatusColor = (status: string) => {
@@ -90,6 +167,10 @@ export default function TournamentDetailPage() {
   return (
     <ProtectedRoute>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Breadcrumb items={[
+          { label: 'Tournaments', href: '/tournaments' },
+          { label: tournament.name },
+        ]} />
         {/* Header */}
         <div className="mb-8">
           <Link
@@ -178,10 +259,14 @@ export default function TournamentDetailPage() {
               { id: 'overview', name: 'Overview', icon: Trophy },
               { id: 'standings', name: 'Standings', icon: BarChart3 },
               { id: 'statistics', name: 'Statistics', icon: Users },
+              { id: 'rosters', name: 'Rosters', icon: Users },
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => {
+                  setActiveTab(tab.id as any);
+                  if (tab.id === 'rosters') fetchRosterData();
+                }}
                 className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === tab.id
                     ? 'border-blue-500 text-blue-600'
@@ -370,6 +455,136 @@ export default function TournamentDetailPage() {
                   </tbody>
                 </table>
               </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'rosters' && (
+          <div className="space-y-4">
+            {rosterMessage && (
+              <div className={`p-3 rounded-md border text-sm ${rosterMessage.type === 'success' ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
+                {rosterMessage.text}
+              </div>
+            )}
+
+            {registeredTeams.length === 0 ? (
+              <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
+                No teams registered in this tournament yet.
+              </div>
+            ) : (
+              registeredTeams.map((reg: any) => {
+                const team = reg.teamDetails;
+                const teamId = reg.teamId;
+                const roster = teamRosters[teamId] || [];
+                const isExpanded = expandedTeam === teamId;
+                const isAddingHere = addingPlayerTo === teamId;
+
+                return (
+                  <div key={teamId} className="bg-white rounded-lg shadow">
+                    {/* Team header */}
+                    <div
+                      className="px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-gray-50"
+                      onClick={() => setExpandedTeam(isExpanded ? null : teamId)}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Users className="h-5 w-5 text-blue-600" />
+                        <div>
+                          <span className="font-medium text-gray-900">{team?.name || 'Unknown Team'}</span>
+                          <span className="ml-3 text-sm text-gray-500">Captain: {team?.captainName}</span>
+                        </div>
+                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {roster.length} player{roster.length !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      {isExpanded ? <ChevronUp className="h-4 w-4 text-gray-400" /> : <ChevronDown className="h-4 w-4 text-gray-400" />}
+                    </div>
+
+                    {/* Roster content */}
+                    {isExpanded && (
+                      <div className="border-t border-gray-200 px-6 py-4">
+                        {roster.length === 0 ? (
+                          <p className="text-sm text-gray-500 mb-4">No players assigned to this team yet.</p>
+                        ) : (
+                          <div className="space-y-2 mb-4">
+                            {roster.map((entry: any) => (
+                              <div key={entry.playerId} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-md">
+                                <div className="flex items-center space-x-3">
+                                  <div className="h-7 w-7 rounded-full bg-blue-100 flex items-center justify-center text-xs font-medium text-blue-700">
+                                    {entry.playerDetails?.name?.charAt(0) || '?'}
+                                  </div>
+                                  <div>
+                                    <span className="text-sm font-medium text-gray-900">{entry.playerDetails?.name || 'Unknown'}</span>
+                                    <span className="ml-2 text-xs text-gray-500 capitalize">{entry.role}</span>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => handleRemovePlayer(teamId, entry.playerId)}
+                                  className="p-1 text-gray-400 hover:text-red-600 rounded"
+                                  title="Remove from roster"
+                                >
+                                  <X className="h-4 w-4" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Add player form */}
+                        {isAddingHere ? (
+                          <div className="flex items-end space-x-3 mt-2">
+                            <div className="flex-1">
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Player</label>
+                              <select
+                                value={selectedPlayerId}
+                                onChange={(e) => setSelectedPlayerId(e.target.value)}
+                                className="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:ring-blue-500 focus:border-blue-500"
+                              >
+                                <option value="">Select player</option>
+                                {getAvailablePlayers(teamId).map((p) => (
+                                  <option key={p.id} value={p.id}>{p.name}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Role</label>
+                              <select
+                                value={selectedRole}
+                                onChange={(e) => setSelectedRole(e.target.value)}
+                                className="block border-gray-300 rounded-md shadow-sm text-sm focus:ring-blue-500 focus:border-blue-500"
+                              >
+                                <option value="regular">Regular</option>
+                                <option value="captain">Captain</option>
+                                <option value="alternate">Alternate</option>
+                              </select>
+                            </div>
+                            <button
+                              onClick={() => handleAddPlayer(teamId)}
+                              disabled={!selectedPlayerId}
+                              className="px-3 py-2 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                            >
+                              Add
+                            </button>
+                            <button
+                              onClick={() => { setAddingPlayerTo(null); setSelectedPlayerId(''); }}
+                              className="px-3 py-2 text-sm font-medium rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => { setAddingPlayerTo(teamId); setExpandedTeam(teamId); setSelectedPlayerId(''); }}
+                            className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add Player
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
             )}
           </div>
         )}
